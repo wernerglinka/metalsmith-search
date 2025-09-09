@@ -1,11 +1,11 @@
 /**
  * Configuration Utilities for Metalsmith Plugins
- * 
+ *
  * This file provides utilities for handling plugin configuration:
  * - Deep merging of configuration objects
  * - File pattern matching using Metalsmith's native methods
  * - Option validation and normalization
- * 
+ *
  * Philosophy: Use Metalsmith's built-in capabilities and local utility functions
  * instead of external dependencies to keep plugins lightweight.
  */
@@ -17,7 +17,7 @@
  * @type {Object}
  * @property {string} pattern - Files to process (always exists after merge)
  * @property {string[]} ignore - Files to ignore (always exists after merge)
- * 
+ *
  * IMPORTANT: After deepMerge(defaults, userOptions), all default properties
  * are guaranteed to exist. User options can override values but cannot remove
  * properties. This means:
@@ -29,7 +29,7 @@ export const defaultOptions = {
   ignore: ['**/search-index.json'],
   async: false,
   batchSize: 10,
-  
+
   // Search-specific options
   indexPath: 'search-index.json',
   indexLevels: ['page', 'section'],
@@ -37,45 +37,45 @@ export const defaultOptions = {
   stripHtml: true,
   generateAnchors: true,
   lazyLoad: true,
-  
+
   // Fuse.js options
   fuseOptions: {
     keys: [
-      { name: 'pageName', weight: 10 },  // Page name for high-priority search
-      { name: 'title', weight: 8 },      // Section/entry title  
-      { name: 'leadIn', weight: 5 },     // Optional frontmatter field
-      { name: 'prose', weight: 3 },      // Optional frontmatter field
-      { name: 'content', weight: 1 },    // Plugin-generated full content
-      { name: 'tags', weight: 6 }        // Content tags
+      { name: 'pageName', weight: 10 }, // Page name for high-priority search
+      { name: 'title', weight: 8 }, // Section/entry title
+      { name: 'leadIn', weight: 5 }, // Optional frontmatter field
+      { name: 'prose', weight: 3 }, // Optional frontmatter field
+      { name: 'content', weight: 1 }, // Plugin-generated full content
+      { name: 'tags', weight: 6 }, // Content tags
     ],
     threshold: 0.3,
     includeScore: true,
     includeMatches: true,
-    minMatchCharLength: 3  // Skip stop words (to, be, or, etc.)
+    minMatchCharLength: 3, // Skip stop words (to, be, or, etc.)
   },
-  
+
   // Component-aware indexing (auto-detected)
   sectionTypeField: 'sectionType',
   autoDetectSectionTypes: true,
-  
+
   // Traditional content processing
   maxSectionLength: 2000, // Split sections longer than this
   chunkSize: 1500, // Target chunk size for long content
   minSectionLength: 50, // Skip sections shorter than this
   processMarkdownFields: true, // Process markdown in frontmatter
-  frontmatterFields: ['summary', 'intro', 'leadIn', 'subTitle', 'abstract', 'overview'] // Additional fields to index
+  frontmatterFields: ['summary', 'intro', 'leadIn', 'subTitle', 'abstract', 'overview'], // Additional fields to index
 };
 
 /**
  * Deep merge configuration objects
- * 
+ *
  * Modern functional approach using reduce() and object spread.
  * This implementation:
  * - Creates new objects instead of mutating existing ones
  * - Handles nested objects recursively
  * - Uses constructor check for reliable object detection
  * - Utilizes optional chaining for safe property access
- * 
+ *
  * Based on the proven implementation from metalsmith-optimize-images.
  */
 const deepMerge = (target, source) =>
@@ -84,11 +84,12 @@ const deepMerge = (target, source) =>
       ...acc,
       // If source value is a plain object, recursively merge it
       // Otherwise, use the source value directly (overwrites target)
-      [key]: source[key]?.constructor === Object 
-        ? deepMerge(target[key] || {}, source[key]) 
-        : source[key]
+      [key]:
+        source[key]?.constructor === Object
+          ? deepMerge(target[key] || {}, source[key])
+          : source[key],
     }),
-    { ...target }  // Start with a copy of target to avoid mutation
+    { ...target } // Start with a copy of target to avoid mutation
   );
 
 /**
@@ -100,11 +101,11 @@ function normalizeToArray(value) {
   if (typeof value === 'string') {
     return [value];
   }
-  
+
   if (Array.isArray(value)) {
     return value;
   }
-  
+
   return [];
 }
 
@@ -117,7 +118,7 @@ export function normalizeOptions(options) {
   return {
     ...options,
     pattern: normalizeToArray(options.pattern),
-    ignore: normalizeToArray(options.ignore)
+    ignore: normalizeToArray(options.ignore),
   };
 }
 
@@ -137,19 +138,19 @@ function hasIgnorePatterns(ignore) {
  * @returns {string[]} Filtered file list
  */
 function filterIgnoredFiles(matchedFiles, ignoredFiles) {
-  return matchedFiles.filter(filename => !ignoredFiles.includes(filename));
+  return matchedFiles.filter((filename) => !ignoredFiles.includes(filename));
 }
 
 /**
  * Get files that match patterns and are not ignored
- * 
+ *
  * Uses Metalsmith's built-in match() method instead of external glob libraries.
  * This approach:
  * - Leverages Metalsmith's native file matching capabilities
- * - Eliminates external dependencies 
+ * - Eliminates external dependencies
  * - Ensures consistent behavior with other Metalsmith plugins
  * - Supports all glob patterns that Metalsmith supports
- * 
+ *
  * @param {Object} files - Metalsmith files object (all files in the build)
  * @param {Object} options - Normalized options with pattern and ignore arrays
  * @param {Object} metalsmith - Metalsmith instance (needed for match method)
@@ -171,4 +172,4 @@ export function validateFiles(files, options, metalsmith) {
 }
 
 // Export deepMerge for use in main plugin file
-export { deepMerge };
+export { deepMerge, normalizeToArray, hasIgnorePatterns };

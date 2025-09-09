@@ -9,8 +9,10 @@
  * @returns {boolean} True if critical error
  */
 export function isCriticalFileError(error) {
-  return error.message.includes('File contents is not a Buffer') || 
-         error.message.includes('File object is null');
+  return (
+    error.message.includes('File contents is not a Buffer') ||
+    error.message.includes('File object is null')
+  );
 }
 
 /**
@@ -31,13 +33,13 @@ export function shouldProcessAsync(options) {
  */
 export function discoverSectionTypes(files, filesToProcess, options) {
   const discoveredTypes = new Set();
-  
+
   for (const filename of filesToProcess) {
     const file = files[filename];
     const sectionsArray = file[options.sectionsField];
-    
+
     if (Array.isArray(sectionsArray)) {
-      sectionsArray.forEach(section => {
+      sectionsArray.forEach((section) => {
         const sectionType = section[options.sectionTypeField];
         if (sectionType && typeof sectionType === 'string') {
           discoveredTypes.add(sectionType);
@@ -45,10 +47,10 @@ export function discoverSectionTypes(files, filesToProcess, options) {
       });
     }
   }
-  
+
   // Always include 'traditional' for long-form content
   discoveredTypes.add('traditional');
-  
+
   return discoveredTypes;
 }
 
@@ -59,7 +61,7 @@ export function discoverSectionTypes(files, filesToProcess, options) {
  */
 export function generateComponentFields(sectionTypes) {
   const componentFields = {};
-  
+
   for (const type of sectionTypes) {
     if (type === 'traditional') {
       componentFields[type] = ['content'];
@@ -68,6 +70,6 @@ export function generateComponentFields(sectionTypes) {
       componentFields[type] = ['title', 'subTitle', 'leadIn', 'prose', 'caption', 'altText'];
     }
   }
-  
+
   return componentFields;
 }

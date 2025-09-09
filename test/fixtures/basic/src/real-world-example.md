@@ -9,7 +9,9 @@ navigation:
 
 seo:
   title: Metalsmith Components - Modular Page Building Framework
-  description: 'Build dynamic web pages with **reusable** Metalsmith components. A modern component-based architecture for static site generation.'
+  description:
+    'Build dynamic web pages with **reusable** Metalsmith components. A modern component-based
+    architecture for static site generation.'
   keywords: 'metalsmith, static site generator, components, modular design'
 
 sections:
@@ -22,7 +24,10 @@ sections:
       title: Metalsmith Components
       titleTag: 'h1'
       subTitle: 'A collection of section components for Metalsmith in 2025 and beyond'
-      prose: This website provides page sections components. The page sections are bare-bones interpretations of universal information presentation patterns that can be found on almost every website.
+      prose:
+        This website provides page sections components. The page sections are bare-bones
+        interpretations of universal information presentation patterns that can be found on almost
+        every website.
     ctas:
       - url: '/library'
         label: 'Go to the Library'
@@ -77,7 +82,9 @@ sections:
       leadIn: 'And what is this?'
       title: Media Section Example
       titleTag: 'h2'
-      prose: Example of a media section with text and image. The text area has a `lead-in`, **title**, sub-title, and prose. The prose is *markdown text*. All of the text parts are optional.
+      prose:
+        Example of a media section with text and image. The text area has a `lead-in`, **title**,
+        sub-title, and prose. The prose is *markdown text*. All of the text parts are optional.
     ctas:
       - url: 'https://metalsmith.io'
         label: 'Metalsmith Central'
@@ -101,4 +108,5 @@ sections:
         buttonStyle: 'primary'
 ---
 
-This page demonstrates modern Metalsmith component architecture with no traditional markdown body content.
+This page demonstrates modern Metalsmith component architecture with no traditional markdown body
+content.

@@ -9,40 +9,40 @@
  * @param {Object} options - Index creation options
  * @returns {Promise<Object>} Search index object
  */
-export async function createSearchIndex(searchEntries, options) {
+export function createSearchIndex(searchEntries, options) {
   if (!Array.isArray(searchEntries) || searchEntries.length === 0) {
     return createEmptyIndex(options);
   }
-  
+
   // Optimize entries for search
-  const optimizedEntries = optimizeEntriesForSearch(searchEntries, options);
-  
+  const optimizedEntries = optimizeEntriesForSearch(searchEntries);
+
   // Create index structure
   const index = {
     version: '1.0.0',
     generator: 'metalsmith-search',
     generated: new Date().toISOString(),
     totalEntries: optimizedEntries.length,
-    
+
     // Index configuration for client-side reconstruction
     config: {
       fuseOptions: options.fuseOptions,
       indexLevels: options.indexLevels,
-      lazyLoad: options.lazyLoad
+      lazyLoad: options.lazyLoad,
     },
-    
+
     // Statistics for debugging and optimization
     stats: generateIndexStats(optimizedEntries),
-    
+
     // The actual searchable data
-    entries: optimizedEntries
+    entries: optimizedEntries,
   };
-  
+
   // Generate additional index formats if needed
   if (options.lazyLoad) {
     index.lazyLoadUrl = options.indexPath.replace('.json', '-lazy.json');
   }
-  
+
   return index;
 }
 
@@ -52,20 +52,20 @@ export async function createSearchIndex(searchEntries, options) {
  * @param {Object} options - Optimization options
  * @returns {Array} Optimized entries
  */
-function optimizeEntriesForSearch(entries, options) {
+function optimizeEntriesForSearch(entries) {
   return entries.map((entry, index) => {
     const optimized = {
       // Unique identifier for each entry
       id: entry.id || `entry-${index}`,
-      
+
       // Entry type and metadata
       type: entry.type || 'page',
       url: entry.url || '/',
-      
+
       // Searchable content fields
       title: cleanText(entry.title || ''),
       content: cleanText(entry.content || ''),
-      
+
       // Additional metadata for enhanced search
       ...(entry.description && { description: cleanText(entry.description) }),
       ...(entry.excerpt && { excerpt: cleanText(entry.excerpt) }),
@@ -75,15 +75,15 @@ function optimizeEntriesForSearch(entries, options) {
       ...(entry.tags && { tags: entry.tags }),
       ...(entry.date && { date: entry.date }),
       ...(entry.author && { author: entry.author }),
-      
+
       // Section-specific metadata
       ...(entry.sectionType && { sectionType: entry.sectionType }),
       ...(entry.sectionIndex !== undefined && { sectionIndex: entry.sectionIndex }),
-      
+
       // Search relevance (initially 0, will be set by Fuse.js)
-      score: 0
+      score: 0,
     };
-    
+
     // Remove empty or undefined fields to reduce index size
     return removeEmptyFields(optimized);
   });
@@ -100,29 +100,29 @@ function generateIndexStats(entries) {
     entriesByType: {},
     entriesBySectionType: {},
     averageContentLength: 0,
-    totalContentLength: 0
+    totalContentLength: 0,
   };
-  
+
   let totalLength = 0;
-  
+
   for (const entry of entries) {
     // Count by entry type
     stats.entriesByType[entry.type] = (stats.entriesByType[entry.type] || 0) + 1;
-    
+
     // Count by section type
     if (entry.sectionType) {
-      stats.entriesBySectionType[entry.sectionType] = 
+      stats.entriesBySectionType[entry.sectionType] =
         (stats.entriesBySectionType[entry.sectionType] || 0) + 1;
     }
-    
+
     // Calculate content length
     const contentLength = (entry.content || '').length;
     totalLength += contentLength;
   }
-  
+
   stats.totalContentLength = totalLength;
   stats.averageContentLength = entries.length > 0 ? Math.round(totalLength / entries.length) : 0;
-  
+
   return stats;
 }
 
@@ -140,16 +140,16 @@ function createEmptyIndex(options) {
     config: {
       fuseOptions: options.fuseOptions,
       indexLevels: options.indexLevels,
-      lazyLoad: options.lazyLoad
+      lazyLoad: options.lazyLoad,
     },
     stats: {
       totalEntries: 0,
       entriesByType: {},
       entriesBySectionType: {},
       averageContentLength: 0,
-      totalContentLength: 0
+      totalContentLength: 0,
     },
-    entries: []
+    entries: [],
   };
 }
 
@@ -162,15 +162,17 @@ function cleanText(text) {
   if (!text || typeof text !== 'string') {
     return '';
   }
-  
-  return text
-    .trim()
-    // Normalize whitespace
-    .replace(/\s+/g, ' ')
-    // Remove excessive punctuation
-    .replace(/[^\w\s\-.,!?;:'"()]/g, '')
-    // Limit length to prevent index bloat (adjust as needed)
-    .substring(0, 2000);
+
+  return (
+    text
+      .trim()
+      // Normalize whitespace
+      .replace(/\s+/g, ' ')
+      // Remove excessive punctuation
+      .replace(/[^\w\s\-.,!?;:'"()]/g, '')
+      // Limit length to prevent index bloat (adjust as needed)
+      .substring(0, 2000)
+  );
 }
 
 /**
@@ -180,7 +182,7 @@ function cleanText(text) {
  */
 function removeEmptyFields(obj) {
   const cleaned = {};
-  
+
   for (const [key, value] of Object.entries(obj)) {
     if (value !== null && value !== undefined && value !== '') {
       // Keep arrays even if empty (they might be intentionally empty)
@@ -189,6 +191,6 @@ function removeEmptyFields(obj) {
       }
     }
   }
-  
+
   return cleaned;
 }

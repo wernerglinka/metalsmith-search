@@ -21,11 +21,11 @@ function isValidTextInput(text) {
 function cleanTextForAnchor(text, separator) {
   return text
     .toLowerCase()
-    .replace(/<[^>]+>/g, '')  // Remove HTML tags
-    .replace(/[^\w\s-]/g, '')  // Remove special characters
-    .replace(/[\s_]+/g, separator)  // Replace spaces with separator
-    .replace(new RegExp(`${separator}+`, 'g'), separator)  // Remove multiple separators
-    .replace(new RegExp(`^${separator}+|${separator}+$`, 'g'), '');  // Trim separators
+    .replace(/<[^>]+>/g, '') // Remove HTML tags
+    .replace(/[^\w\s-]/g, '') // Remove special characters
+    .replace(/[\s_]+/g, separator) // Replace spaces with separator
+    .replace(new RegExp(`${separator}+`, 'g'), separator) // Remove multiple separators
+    .replace(new RegExp(`^${separator}+|${separator}+$`, 'g'), ''); // Trim separators
 }
 
 /**
@@ -49,10 +49,8 @@ function truncateText(text, maxLength, separator) {
   if (text.length <= maxLength) {
     return text;
   }
-  
-  return text
-    .substring(0, maxLength)
-    .replace(new RegExp(`${separator}+$`), '');
+
+  return text.substring(0, maxLength).replace(new RegExp(`${separator}+$`), '');
 }
 
 /**
@@ -96,21 +94,21 @@ export function generateAnchorId(text, options = {}) {
   if (!isValidTextInput(text)) {
     return 'section';
   }
-  
+
   const config = {
     maxLength: 50,
     prefix: '',
     suffix: '',
     allowNumbers: true,
     separator: '-',
-    ...options
+    ...options,
   };
-  
+
   let anchor = cleanTextForAnchor(text, config.separator);
   anchor = processNumbers(anchor, config.allowNumbers);
   anchor = truncateText(anchor, config.maxLength, config.separator);
   anchor = addPrefix(anchor, config.prefix, config.separator);
   anchor = addSuffix(anchor, config.suffix, config.separator);
-  
+
   return ensureValidAnchor(anchor);
 }

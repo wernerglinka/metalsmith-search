@@ -1,6 +1,7 @@
 # Getting Started with Metalsmith Search
 
-This guide walks you through adding modern fuzzy search capabilities to your Metalsmith site using `metalsmith-search` with its clean markdown-first approach.
+This guide walks you through adding modern fuzzy search capabilities to your Metalsmith site using
+`metalsmith-search` with its clean markdown-first approach.
 
 ## Prerequisites
 
@@ -28,17 +29,19 @@ import collections from '@metalsmith/collections';
 const metalsmith = Metalsmith(__dirname)
   .source('src')
   .destination('dist')
-  
+
   // Add search plugin EARLY for clean content (recommended)
-  .use(search({
-    // Defaults to '**/*.md' - processes clean markdown files
-    indexLevels: ['page', 'section']
-  }))
-  
+  .use(
+    search({
+      // Defaults to '**/*.md' - processes clean markdown files
+      indexLevels: ['page', 'section'],
+    })
+  )
+
   // Content processing happens AFTER search indexing
-  .use(layouts())      // HTML generation after search
-  .use(collections())  // Collections after search
-  
+  .use(layouts()) // HTML generation after search
+  .use(collections()) // Collections after search
+
   .build((err) => {
     if (err) throw err;
     console.log('Build complete with clean search index!');
@@ -51,7 +54,8 @@ const metalsmith = Metalsmith(__dirname)
 node metalsmith.js
 ```
 
-This creates `build/search-index.json` containing your searchable content extracted from clean markdown files.
+This creates `build/search-index.json` containing your searchable content extracted from clean
+markdown files.
 
 ## Client-Side Implementation
 
@@ -61,18 +65,18 @@ This creates `build/search-index.json` containing your searchable content extrac
 <!-- search.html -->
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Search - My Site</title>
-  <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
-</head>
-<body>
-  <div class="search-container">
-    <input type="text" id="search-input" placeholder="Search..." />
-    <div id="search-results"></div>
-  </div>
+  <head>
+    <title>Search - My Site</title>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+  </head>
+  <body>
+    <div class="search-container">
+      <input type="text" id="search-input" placeholder="Search..." />
+      <div id="search-results"></div>
+    </div>
 
-  <script src="/js/search.js"></script>
-</body>
+    <script src="/js/search.js"></script>
+  </body>
 </html>
 ```
 
@@ -96,7 +100,7 @@ async function initSearch() {
     // Get DOM elements
     searchInput = document.getElementById('search-input');
     searchResults = document.getElementById('search-results');
-    
+
     if (!searchInput || !searchResults) {
       console.error('Search elements not found');
       return;
@@ -105,13 +109,13 @@ async function initSearch() {
     // Load the search index
     const response = await fetch('/search-index.json');
     const searchData = await response.json();
-    
+
     // Initialize Fuse.js with the index
     fuse = new Fuse(searchData.entries, searchData.config.fuseOptions);
-    
+
     // Set up event listeners
     searchInput.addEventListener('input', handleSearch);
-    
+
     console.log(`Search ready with ${searchData.searchData.length} entries`);
   } catch (error) {
     console.error('Failed to initialize search:', error);
@@ -120,7 +124,7 @@ async function initSearch() {
 
 function handleSearch(event) {
   const query = event.target.value.trim();
-  
+
   if (query.length < 2) {
     clearResults();
     return;
@@ -136,11 +140,12 @@ function displayResults(results) {
     return;
   }
 
-  const resultsHTML = results.map(result => {
-    const item = result.item;
-    const score = Math.round((1 - result.score) * 100);
-    
-    return `
+  const resultsHTML = results
+    .map((result) => {
+      const item = result.item;
+      const score = Math.round((1 - result.score) * 100);
+
+      return `
       <div class="search-result">
         <h3><a href="${item.url}">${item.title}</a></h3>
         ${item.pageName ? `<div class="page-context">From: <strong>${item.pageName}</strong></div>` : ''}
@@ -151,7 +156,8 @@ function displayResults(results) {
         </div>
       </div>
     `;
-  }).join('');
+    })
+    .join('');
 
   searchResults.innerHTML = resultsHTML;
 }
@@ -248,20 +254,20 @@ Create `src/css/search.css`:
 .use(search({
   // Markdown files to index (default: '**/*.md')
   pattern: '**/*.md',
-  
+
   // Output file
   indexPath: 'search-index.json',
-  
+
   // What to index
   indexLevels: ['page', 'section'],
-  
+
   // Component array field (default: 'sections')
   sectionsField: 'sections',
-  
+
   // Auto-detection (default: true)
   autoDetectSectionTypes: true,
   sectionTypeField: 'sectionType',
-  
+
   // Performance options
   batchSize: 10,
   async: false
@@ -275,21 +281,21 @@ Create `src/css/search.css`:
   // File processing (markdown-first approach)
   pattern: '**/*.md',
   ignore: ['**/search-index.json'],
-  
+
   // Index configuration
   indexPath: 'search-index.json',
   indexLevels: ['page', 'section'],
   sectionsField: 'sections',  // Customize component field name
   stripHtml: true,
   generateAnchors: true,
-  
+
   // Content processing
   maxSectionLength: 2000,
   chunkSize: 1500,
   minSectionLength: 50,
   processMarkdownFields: true,
   frontmatterFields: ['summary', 'intro', 'leadIn'],
-  
+
   // Enhanced Fuse.js options (with page-name prioritized search keys)
   fuseOptions: {
     keys: [
@@ -297,7 +303,7 @@ Create `src/css/search.css`:
       { name: 'title', weight: 8 },       // Section titles
       { name: 'tags', weight: 6 },        // Content tags
       { name: 'leadIn', weight: 5 },      // Optional frontmatter
-      { name: 'prose', weight: 3 },       // Optional frontmatter  
+      { name: 'prose', weight: 3 },       // Optional frontmatter
       { name: 'content', weight: 1 }      // Generated full content
     ],
     threshold: 0.3,
@@ -305,7 +311,7 @@ Create `src/css/search.css`:
     includeMatches: true,
     minMatchCharLength: 3  // Filter stop words
   },
-  
+
   // Performance
   batchSize: 20,
   async: true
@@ -328,12 +334,14 @@ DEBUG=metalsmith-search* node build.js
 ```
 
 **How Auto-Detection Works:**
+
 1. **Scans all files** for component arrays (default field: `sections`)
-2. **Discovers section types** from each component's `sectionType` field  
+2. **Discovers section types** from each component's `sectionType` field
 3. **Generates field mappings** automatically for discovered types
 4. **No manual updates** needed when adding new components
 
-**Benefit:** Add new component types to your content and they're automatically indexed - no need to update your metalsmith.js configuration!
+**Benefit:** Add new component types to your content and they're automatically indexed - no need to
+update your metalsmith.js configuration!
 
 ### Custom Component Field Names
 
@@ -347,24 +355,26 @@ If your site uses a different field name for component arrays, configure it:
 ```
 
 **Frontmatter structure:**
+
 ```yaml
 ---
-title: "My Page"
-myComponents:  # Custom field name
+title: 'My Page'
+myComponents: # Custom field name
   - sectionType: hero
     text:
-      title: "Welcome"
-      prose: "Content here"
+      title: 'Welcome'
+      prose: 'Content here'
   - sectionType: text-only
     text:
-      prose: "More content"
+      prose: 'More content'
 ---
 ```
 
 Common alternative field names:
+
 - `sections` (default)
 - `components`
-- `blocks` 
+- `blocks`
 - `content`
 - `myComponents`
 - `pageComponents`
@@ -375,16 +385,16 @@ For sites using component-based architecture:
 
 ```yaml
 ---
-title: "My Page"
+title: 'My Page'
 sections:
   - sectionType: hero
     text:
-      title: "Welcome"
-      leadIn: "Get started"
-      prose: "This is searchable content"
+      title: 'Welcome'
+      leadIn: 'Get started'
+      prose: 'This is searchable content'
   - sectionType: text-only
     text:
-      prose: "More searchable content here"
+      prose: 'More searchable content here'
 ---
 ```
 
@@ -394,11 +404,10 @@ For traditional long-form content:
 
 ```yaml
 ---
-title: "My Article"
-summary: "Brief description with **markdown**"
-tags: ["web", "development"]
+title: 'My Article'
+summary: 'Brief description with **markdown**'
+tags: ['web', 'development']
 ---
-
 # Article Title
 
 Long-form content that gets automatically chunked for search...
@@ -411,24 +420,28 @@ Long-form content that gets automatically chunked for search...
 ```javascript
 Metalsmith(__dirname)
   // Search plugin goes EARLY (recommended)
-  .use(search({
-    // Processes clean markdown files
-    // Default pattern: '**/*.md'
-  }))
-  
-  .use(markdown())      // Convert markdown after indexing
-  .use(layouts())       // Apply templates after indexing
-  .use(collections())   // Organize content after indexing
-  .use(assets())        // Process assets after indexing
+  .use(
+    search({
+      // Processes clean markdown files
+      // Default pattern: '**/*.md'
+    })
+  )
+
+  .use(markdown()) // Convert markdown after indexing
+  .use(layouts()) // Apply templates after indexing
+  .use(collections()) // Organize content after indexing
+  .use(assets()); // Process assets after indexing
 ```
 
 **Benefits of Early Pipeline Positioning:**
+
 - ✅ **Clean Content**: Avoids HTML chrome (nav, headers, footers)
 - ✅ **Better Search Results**: No irrelevant page structure in index
 - ✅ **Smaller Index**: Only meaningful content is indexed
 - ✅ **Faster Processing**: Less content to parse and clean
 
 This approach ensures search processes:
+
 - Clean markdown source files
 - Pure frontmatter metadata
 - Content without HTML pollution
@@ -437,21 +450,23 @@ This approach ensures search processes:
 
 ### Page Context in Search Results
 
-Every search entry now includes a `pageName` field for better user experience. This helps users understand which page each result comes from:
+Every search entry now includes a `pageName` field for better user experience. This helps users
+understand which page each result comes from:
 
 ```yaml
 ---
 # Use pageTitle for explicit search display control
-pageTitle: "Getting Started Guide"
-title: "Getting Started with Metalsmith Components"  
+pageTitle: 'Getting Started Guide'
+title: 'Getting Started with Metalsmith Components'
 seo:
-  title: "Complete Getting Started Guide - Learn Metalsmith"
+  title: 'Complete Getting Started Guide - Learn Metalsmith'
 ---
 ```
 
 The plugin uses smart fallback priority:
+
 1. `pageTitle` - Explicit search display name
-2. `seo.title` - SEO-optimized title 
+2. `seo.title` - SEO-optimized title
 3. `title` - Basic page title
 4. `'Untitled Page'` - Final fallback
 
@@ -462,25 +477,28 @@ The plugin automatically finds content at any nesting level in your component st
 ```yaml
 sections:
   - sectionType: hero
-    text:                    # ✅ Level 1: text.title found
-      title: "Hero Title"
-      prose: "Hero content"
-      
+    text: # ✅ Level 1: text.title found
+      title: 'Hero Title'
+      prose: 'Hero content'
+
   - sectionType: complex
-    content:                 # ✅ Level 2: content.main.text.title found  
+    content: # ✅ Level 2: content.main.text.title found
       main:
         text:
-          title: "Deep Title"
-          prose: "Deep content"
+          title: 'Deep Title'
+          prose: 'Deep content'
 ```
 
-No configuration needed - the plugin recursively searches all nested objects to find `title`, `prose`, `leadIn`, and other content fields.
+No configuration needed - the plugin recursively searches all nested objects to find `title`,
+`prose`, `leadIn`, and other content fields.
 
 ### Automatic Section Anchor Management
 
-The plugin ensures perfect synchronization between search URLs and rendered HTML by automatically adding missing section IDs to your frontmatter:
+The plugin ensures perfect synchronization between search URLs and rendered HTML by automatically
+adding missing section IDs to your frontmatter:
 
 **Your template:**
+
 ```html
 <section id="{{ section.id }}">
   <h2>{{ section.text.title }}</h2>
@@ -488,7 +506,8 @@ The plugin ensures perfect synchronization between search URLs and rendered HTML
 ```
 
 **Plugin processing:**
-- Detects missing `section.id` 
+
+- Detects missing `section.id`
 - Generates ID from section title: `"welcome-section"`
 - Adds it to frontmatter: `section.id = "welcome-section"`
 - Creates search URL: `"/page#welcome-section"`
@@ -501,50 +520,52 @@ Enhance your search results with match highlighting:
 
 ```javascript
 function displayResults(results) {
-  const resultsHTML = results.map(result => {
-    const item = result.item;
-    
-    // Highlight matched terms
-    let title = item.title;
-    let excerpt = item.excerpt || item.prose?.substring(0, 200) + '...';
-    
-    if (result.matches) {
-      result.matches.forEach(match => {
-        const field = match.key;
-        const indices = match.indices;
-        
-        if (field === 'title') {
-          title = highlightMatches(title, indices);
-        } else if (field === 'prose' || field === 'excerpt') {
-          excerpt = highlightMatches(excerpt, indices);
-        }
-      });
-    }
-    
-    return `
+  const resultsHTML = results
+    .map((result) => {
+      const item = result.item;
+
+      // Highlight matched terms
+      let title = item.title;
+      let excerpt = item.excerpt || item.prose?.substring(0, 200) + '...';
+
+      if (result.matches) {
+        result.matches.forEach((match) => {
+          const field = match.key;
+          const indices = match.indices;
+
+          if (field === 'title') {
+            title = highlightMatches(title, indices);
+          } else if (field === 'prose' || field === 'excerpt') {
+            excerpt = highlightMatches(excerpt, indices);
+          }
+        });
+      }
+
+      return `
       <div class="search-result">
         <h3><a href="${item.url}">${title}</a></h3>
         <p class="excerpt">${excerpt}</p>
       </div>
     `;
-  }).join('');
-  
+    })
+    .join('');
+
   searchResults.innerHTML = resultsHTML;
 }
 
 function highlightMatches(text, indices) {
   let result = text;
   let offset = 0;
-  
+
   indices.forEach(([start, end]) => {
     const before = result.substring(0, start + offset);
     const match = result.substring(start + offset, end + 1 + offset);
     const after = result.substring(end + 1 + offset);
-    
+
     result = before + `<mark>${match}</mark>` + after;
     offset += 13; // Length of <mark></mark> tags
   });
-  
+
   return result;
 }
 ```
@@ -558,19 +579,19 @@ Filter results by content type:
 function handleSearch(event) {
   const query = event.target.value.trim();
   const category = document.getElementById('category-filter').value;
-  
+
   if (query.length < 2) {
     clearResults();
     return;
   }
 
   let results = fuse.search(query);
-  
+
   // Filter by category if selected
   if (category && category !== 'all') {
-    results = results.filter(result => result.item.type === category);
+    results = results.filter((result) => result.item.type === category);
   }
-  
+
   displayResults(results);
 }
 ```
@@ -584,6 +605,7 @@ DEBUG=metalsmith-search node build.js
 ```
 
 This shows detailed information about:
+
 - Files being processed
 - Content extraction
 - Index generation
@@ -598,11 +620,11 @@ This shows detailed information about:
   // Enable async processing
   async: true,
   batchSize: 50,
-  
+
   // Optimize content chunking
   maxSectionLength: 1500,
   chunkSize: 1000,
-  
+
   // Reduce index size
   stripHtml: true,
   minSectionLength: 100
@@ -622,10 +644,12 @@ const metalsmith = Metalsmith(__dirname)
   .use(collections());
 
 if (isProduction) {
-  metalsmith.use(search({
-    pattern: '**/*.html',
-    indexPath: 'search-index.json'
-  }));
+  metalsmith.use(
+    search({
+      pattern: '**/*.html',
+      indexPath: 'search-index.json',
+    })
+  );
 }
 
 metalsmith.build((err) => {
@@ -639,16 +663,19 @@ metalsmith.build((err) => {
 ### Common Issues
 
 **Empty search index:**
+
 - Ensure the plugin runs on the correct file pattern (default: `**/*.md`)
 - Check that your markdown files contain searchable content
 - Verify frontmatter and content structure is valid
 
 **Large bundle size:**
+
 - Use `stripHtml: true` to remove markup
 - Increase `minSectionLength` to filter short content
 - Consider `lazyLoad: true` for large indexes
 
 **Poor search results:**
+
 - Adjust `threshold` in `fuseOptions` (lower = more strict)
 - Modify field weights to prioritize important content
 - Ensure `content` field is included in search keys for comprehensive coverage

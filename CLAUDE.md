@@ -2,15 +2,19 @@
 
 ## Project Overview
 
-This is a **modern Metalsmith search plugin** that represents a quantum leap beyond legacy solutions like metalsmith-lunr. Built from the ground up using enhanced standards from `metalsmith-plugin-mcp-server`, it combines cutting-edge search technology (Fuse.js) with deep understanding of modern Metalsmith architectures.
+This is a **modern Metalsmith search plugin** that represents a quantum leap beyond legacy solutions
+like metalsmith-lunr. Built from the ground up using enhanced standards from
+`metalsmith-plugin-mcp-server`, it combines cutting-edge search technology (Fuse.js) with deep
+understanding of modern Metalsmith architectures.
 
-**Version**: 0.0.1 (Initial Release)
-**Technology**: Fuse.js-powered fuzzy search with component-based indexing
-**Architecture**: Dual ESM/CommonJS support with comprehensive testing
+**Version**: 0.0.1 (Initial Release) **Technology**: Fuse.js-powered fuzzy search with
+component-based indexing **Architecture**: Dual ESM/CommonJS support with comprehensive testing
 
 ## MCP Server Integration (CRITICAL)
 
-**IMPORTANT**: This plugin was created with `metalsmith-plugin-mcp-server`. When working on this plugin, AI assistants (Claude) MUST use the MCP server tools rather than creating their own implementations.
+**IMPORTANT**: This plugin was created with `metalsmith-plugin-mcp-server`. When working on this
+plugin, AI assistants (Claude) MUST use the MCP server tools rather than creating their own
+implementations.
 
 ### Essential MCP Commands
 
@@ -49,6 +53,7 @@ update-deps .
 ### Common Mistakes to AVOID
 
 **❌ Wrong Approach:**
+
 - Creating custom CLAUDE.md content instead of using `get-template plugin/CLAUDE.md`
 - Scaffolding entire new plugins when you just need a template
 - Making up template content or "simplifying" official templates
@@ -56,6 +61,7 @@ update-deps .
 - Using commands like `npx metalsmith-plugin-mcp-server scaffold ./ CLAUDE.md claude-context`
 
 **✅ Correct Approach:**
+
 - Use `list-templates` to see what's available
 - Use `get-template <template-name>` to get exact content
 - Follow validation recommendations exactly as provided
@@ -65,6 +71,7 @@ update-deps .
 ### Quick Commands
 
 **Quality & Validation:**
+
 ```bash
 npx metalsmith-plugin-mcp-server validate . --functional  # Validate with MCP server
 npm test                                                   # Run tests with coverage
@@ -72,13 +79,15 @@ npm run lint                                              # Lint and fix code
 ```
 
 **Release Process:**
+
 ```bash
 npm run release:patch   # Bug fixes (1.5.4 → 1.5.5)
-npm run release:minor   # New features (1.5.4 → 1.6.0)  
+npm run release:minor   # New features (1.5.4 → 1.6.0)
 npm run release:major   # Breaking changes (1.5.4 → 2.0.0)
 ```
 
 **Development:**
+
 ```bash
 npm run build          # Build ESM/CJS versions
 npm run test:coverage  # Run tests with detailed coverage
@@ -92,11 +101,12 @@ npm run test:coverage  # Run tests with detailed coverage
 
 ```bash
 npm run lint          # Fix linting issues
-npm run format        # Format code consistently  
+npm run format        # Format code consistently
 npm test              # Ensure all tests pass
 ```
 
-**If any of these commands fail, you MUST fix the issues before proceeding with commits or releases.**
+**If any of these commands fail, you MUST fix the issues before proceeding with commits or
+releases.**
 
 ### Common Development Commands
 
@@ -134,9 +144,12 @@ npm run release:major  # For breaking changes (X.0.0)
 
 ### 1. Component-Based vs Traditional Content Architecture
 
-**Discovery**: Modern Metalsmith sites (2025 pattern) use component-based architecture with sections arrays, while traditional sites use long-form markdown content. The plugin needed to support both paradigms seamlessly.
+**Discovery**: Modern Metalsmith sites (2025 pattern) use component-based architecture with sections
+arrays, while traditional sites use long-form markdown content. The plugin needed to support both
+paradigms seamlessly.
 
-**Solution**: 
+**Solution**:
+
 - **Component-based processing**: Extracts content from frontmatter sections arrays
 - **Traditional processing**: Intelligent chunking of long markdown content
 - **Unified indexing**: Both approaches feed into the same Fuse.js search index
@@ -157,9 +170,11 @@ Content that gets intelligently chunked...
 
 ### 2. Pipeline Positioning Strategy
 
-**Critical Discovery**: Plugin must run **late in the Metalsmith pipeline** after content processing but still have access to original frontmatter.
+**Critical Discovery**: Plugin must run **late in the Metalsmith pipeline** after content processing
+but still have access to original frontmatter.
 
 **Rationale**:
+
 - ✅ Access to processed HTML content from layouts/templates
 - ✅ Access to original frontmatter metadata
 - ✅ All content transformations are complete
@@ -168,19 +183,24 @@ Content that gets intelligently chunked...
 ```javascript
 // Optimal pipeline position
 Metalsmith(__dirname)
-  .use(layouts())           // Content processing
-  .use(collections())       // Metadata organization
-  .use(search({            // Search indexing (LATE STAGE)
-    pattern: '**/*.html',   // Process final HTML
-    indexLevels: ['page', 'section']
-  }))
+  .use(layouts()) // Content processing
+  .use(collections()) // Metadata organization
+  .use(
+    search({
+      // Search indexing (LATE STAGE)
+      pattern: '**/*.html', // Process final HTML
+      indexLevels: ['page', 'section'],
+    })
+  );
 ```
 
 ### 3. Metalsmith Philosophy: Real Web Technologies
 
-**Key Insight**: User feedback emphasized "Metalsmith builds pages with real HTML, CSS and plain JavaScript" - not React or other frameworks.
+**Key Insight**: User feedback emphasized "Metalsmith builds pages with real HTML, CSS and plain
+JavaScript" - not React or other frameworks.
 
 **Implementation Impact**:
+
 - Removed React examples from documentation
 - Focused on vanilla JavaScript client-side integration
 - Emphasized progressive enhancement approach
@@ -190,24 +210,28 @@ Metalsmith(__dirname)
 
 **Challenge**: Any frontmatter field might contain markdown that needs processing for search.
 
-**Solution**: 
+**Solution**:
+
 ```javascript
 // Process markdown in frontmatter fields
 processMarkdownFields: true,
 frontmatterFields: ['summary', 'intro', 'leadIn', 'subTitle', 'abstract']
 ```
 
-This ensures rich metadata is properly indexed regardless of where it appears in the content structure.
+This ensures rich metadata is properly indexed regardless of where it appears in the content
+structure.
 
 ### 5. Performance Optimization Insights
 
 **Batch Processing**: Large sites need efficient processing
+
 ```javascript
 batchSize: 10, // Process files in batches
 async: false   // Enable for very large sites
 ```
 
 **Content Chunking**: Long articles need intelligent splitting
+
 ```javascript
 maxSectionLength: 2000, // Split long sections
 chunkSize: 1500,        // Target chunk size
@@ -221,7 +245,7 @@ minSectionLength: 50    // Skip tiny sections
 This plugin supports both ESM and CommonJS:
 
 - **Source**: Write in ESM in `src/index.js`
-- **Build**: Creates both `lib/index.js` (ESM) and `lib/index.cjs` (CommonJS) 
+- **Build**: Creates both `lib/index.js` (ESM) and `lib/index.cjs` (CommonJS)
 - **Testing**: Tests run against built files for both formats
 
 ### File Organization
@@ -251,12 +275,15 @@ This plugin supports both ESM and CommonJS:
 This plugin includes these enhanced features:
 
 - **Multi-Level Indexing**: Page, section, and component-level search entries
-- **Dual Content Architecture**: Supports both modern component-based sites and traditional long-form content
-- **Intelligent Content Chunking**: Automatic splitting of long articles with heading-based navigation
+- **Dual Content Architecture**: Supports both modern component-based sites and traditional
+  long-form content
+- **Intelligent Content Chunking**: Automatic splitting of long articles with heading-based
+  navigation
 - **Frontmatter Markdown Processing**: Processes markdown in any frontmatter field
 - **Async Processing**: Batch processing with configurable batch sizes and progress tracking
 - **Semantic HTML Stripping**: Preserves readability while removing markup
 - **Pipeline Optimization**: Positioned for late-stage processing with full content access
+
 ## Testing Strategy
 
 ### Test Structure
@@ -284,7 +311,8 @@ npm run test:coverage
 
 ### Important: Build Before Testing
 
-**Always run `npm run build` before running tests** - the tests execute against the built files in `lib/`, not the source files in `src/`.
+**Always run `npm run build` before running tests** - the tests execute against the built files in
+`lib/`, not the source files in `src/`.
 
 ## Code Quality Standards
 
@@ -316,28 +344,28 @@ npm run test:coverage
  */
 function search(options = {}) {
   const config = deepMerge(defaults, options);
-  
-  return async function(files, metalsmith, done) {
+
+  return async function (files, metalsmith, done) {
     const debug = metalsmith.debug('metalsmith-search');
-    
+
     try {
       // Multi-level content extraction
       const allSearchEntries = [];
-      
+
       // Batch processing for performance
       for (let i = 0; i < filesToProcess.length; i += config.batchSize) {
         const batch = filesToProcess.slice(i, i + config.batchSize);
         // Process batch...
       }
-      
+
       // Generate Fuse.js compatible index
       const searchIndex = await createSearchIndex(allSearchEntries, config);
-      
+
       // Add to Metalsmith files
       files[config.indexPath] = {
-        contents: Buffer.from(JSON.stringify(searchIndex, null, 2))
+        contents: Buffer.from(JSON.stringify(searchIndex, null, 2)),
       };
-      
+
       done();
     } catch (error) {
       done(error);
@@ -354,28 +382,29 @@ export default search;
 // Extract searchable content from multiple levels
 async function extractSearchableContent(file, filename, options, metalsmith) {
   const entries = [];
-  
+
   // Page-level extraction
   if (options.indexLevels.includes('page')) {
     entries.push(await extractPageLevel(file, filename, options));
   }
-  
+
   // Section-level extraction (component-based)
   if (options.indexLevels.includes('section') && file.sections) {
     for (const section of file.sections) {
       entries.push(await extractSectionLevel(section, filename, options));
     }
   }
-  
+
   // Traditional content chunking
   if (file.contents && !file.sections) {
     const chunks = await chunkContent(file.contents, options);
     entries.push(...chunks);
   }
-  
+
   return entries;
 }
 ```
+
 ### Async Processing Pattern
 
 ```javascript
@@ -383,7 +412,7 @@ function (options = {}) {
   return async function(files, metalsmith) {
     const batchSize = options.batchSize || 10;
     const fileList = Object.keys(files);
-    
+
     for (let i = 0; i < fileList.length; i += batchSize) {
       const batch = fileList.slice(i, i + batchSize);
       await processBatch(batch, files, options);
@@ -391,26 +420,31 @@ function (options = {}) {
   };
 }
 ```
+
 ## Release Process
 
 ### Automated Release Process
 
-The release process uses an improved release notes system that generates clean, version-specific GitHub releases:
+The release process uses an improved release notes system that generates clean, version-specific
+GitHub releases:
 
 **Key Features:**
+
 - ✅ Clean, professional release notes
 - ✅ Only current version changes (no "Unreleased" sections)
 - ✅ Automatic commit filtering (excludes chore, ci, dev commits)
 - ✅ Proper GitHub markdown formatting with commit links
 
 **Release Commands:**
+
 ```bash
 npm run release:patch  # Bug fixes (1.2.3 → 1.2.4)
-npm run release:minor  # New features (1.2.3 → 1.3.0)  
+npm run release:minor  # New features (1.2.3 → 1.3.0)
 npm run release:major  # Breaking changes (1.2.3 → 2.0.0)
 ```
 
 The release notes are automatically generated using `scripts/release-notes.sh` which:
+
 1. Gets commits since the previous tag
 2. Filters out merge commits and maintenance commits
 3. Formats with proper GitHub links
@@ -423,6 +457,7 @@ The release notes are automatically generated using `scripts/release-notes.sh` w
 - Code properly linted and formatted
 
 This automatically:
+
 - Updates version in package.json
 - Generates changelog
 - Creates git tag
@@ -493,28 +528,35 @@ const metalsmith = Metalsmith(__dirname)
 ## Development Lessons Summary
 
 ### Technical Achievements
-1. **Dual Architecture Support**: Seamlessly handles both modern component-based and traditional markdown content
+
+1. **Dual Architecture Support**: Seamlessly handles both modern component-based and traditional
+   markdown content
 2. **Pipeline Optimization**: Strategic late-stage positioning for optimal content access
 3. **Performance Engineering**: Intelligent batching and content chunking for large sites
 4. **Standards Compliance**: Full ESM/CommonJS support with comprehensive testing
 5. **Fuse.js Integration**: Modern fuzzy search replacing legacy Lunr.js solutions
 
 ### Philosophical Insights
+
 1. **Web Standards First**: Metalsmith's strength is generating real HTML/CSS/JavaScript
 2. **Progressive Enhancement**: Search works with or without JavaScript frameworks
 3. **Content Flexibility**: Support both cutting-edge and traditional content patterns
 4. **Production Focus**: Late pipeline positioning enables production-only search indexing
 
 ### Best Practices Established
+
 1. **MCP Server Integration**: Always use official templates and validation tools
 2. **Multi-Level Testing**: Test both ESM and CommonJS builds with realistic content
 3. **Comprehensive Documentation**: Include Theory of Operation for complex plugins
 4. **User-Centered Design**: Listen to real-world feedback and adapt accordingly
 
 ### Critical Development Fixes Applied
+
 1. **Build Error Resolution**: Created missing `src/processors/async.js` file
 2. **Test Pattern Alignment**: Updated package.json scripts to match actual test filenames
 3. **Fixture Structure**: Organized test content in proper Metalsmith src/ directory structure
 4. **Documentation Refinement**: Removed framework-specific examples per user feedback
 
-This plugin follows the enhanced standards from `metalsmith-plugin-mcp-server` and represents modern Metalsmith development workflows with lessons learned from real-world implementation and user feedback.
+This plugin follows the enhanced standards from `metalsmith-plugin-mcp-server` and represents modern
+Metalsmith development workflows with lessons learned from real-world implementation and user
+feedback.

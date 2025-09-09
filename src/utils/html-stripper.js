@@ -31,14 +31,17 @@ function removeScriptsAndStyles(html) {
  */
 function convertElements(html, preserveLineBreaks) {
   let result = html;
-  
+
   if (preserveLineBreaks) {
     // Convert block elements to line breaks
-    result = result.replace(/<\/(div|p|h[1-6]|li|tr|section|article|header|footer|main)[^>]*>/gi, '\n');
+    result = result.replace(
+      /<\/(div|p|h[1-6]|li|tr|section|article|header|footer|main)[^>]*>/gi,
+      '\n'
+    );
     result = result.replace(/<br\s*\/?>/gi, '\n');
     result = result.replace(/<hr\s*\/?>/gi, '\n---\n');
   }
-  
+
   return result;
 }
 
@@ -70,9 +73,9 @@ function decodeEntities(text) {
     '&hellip;': '…',
     '&copy;': '©',
     '&reg;': '®',
-    '&trade;': '™'
+    '&trade;': '™',
   };
-  
+
   return text.replace(/&[a-zA-Z0-9#]+;/g, (match) => entities[match] || match);
 }
 
@@ -86,12 +89,12 @@ function cleanWhitespace(text, cleanWhitespace) {
   if (!cleanWhitespace) {
     return text;
   }
-  
+
   return text
-    .replace(/\s+/g, ' ')  // Collapse multiple spaces
-    .replace(/\n\s+/g, '\n')  // Remove spaces at start of lines
-    .replace(/\s+\n/g, '\n')  // Remove spaces at end of lines
-    .replace(/\n{3,}/g, '\n\n');  // Collapse multiple newlines
+    .replace(/\s+/g, ' ') // Collapse multiple spaces
+    .replace(/\n\s+/g, '\n') // Remove spaces at start of lines
+    .replace(/\s+\n/g, '\n') // Remove spaces at end of lines
+    .replace(/\n{3,}/g, '\n\n'); // Collapse multiple newlines
 }
 
 /**
@@ -104,24 +107,24 @@ export function stripHtml(html, options = {}) {
   if (!isValidHtmlInput(html)) {
     return '';
   }
-  
+
   const config = {
     preserveLineBreaks: true,
     cleanWhitespace: true,
     decodeEntities: true,
-    ...options
+    ...options,
   };
-  
+
   let text = html;
   text = removeScriptsAndStyles(text);
   text = convertElements(text, config.preserveLineBreaks);
   text = stripTags(text);
-  
+
   if (config.decodeEntities) {
     text = decodeEntities(text);
   }
-  
+
   text = cleanWhitespace(text, config.cleanWhitespace);
-  
+
   return text.trim();
 }

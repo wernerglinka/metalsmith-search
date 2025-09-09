@@ -7,7 +7,12 @@ import { fileURLToPath } from 'url';
 import { stripHtml } from '../src/utils/html-stripper.js';
 import { generateAnchorId } from '../src/utils/anchor-generator.js';
 import { processAsync } from '../src/processors/async.js';
-import { filterAndSortFiles, validateFileForSearch, hasSearchableContent, isBinaryFile } from '../src/utils/file-filter.js';
+import {
+  filterAndSortFiles,
+  validateFileForSearch,
+  hasSearchableContent,
+  isBinaryFile,
+} from '../src/utils/file-filter.js';
 
 // We need to import the content extractor to test findNestedField
 // Since findNestedField is not exported, we'll test it through extractSearchableContent
@@ -16,7 +21,6 @@ import { extractSearchableContent } from '../src/processors/content-extractor.js
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Utility Functions', function () {
-
   describe('HTML Stripper', function () {
     it('should strip basic HTML tags', function () {
       const html = '<p>This is <strong>bold</strong> text</p>';
@@ -71,7 +75,6 @@ describe('Utility Functions', function () {
       const result = stripHtml(html);
       assert.strictEqual(result, 'Special: áéíóú 中文 🚀');
     });
-
   });
 
   describe('Anchor Generator', function () {
@@ -89,11 +92,10 @@ describe('Utility Functions', function () {
       assert.ok(!result.includes(' '));
     });
 
-
     it('should generate unique IDs for duplicate titles', function () {
       const title1 = generateAnchorId('Duplicate Title');
       const title2 = generateAnchorId('Duplicate Title');
-      
+
       // Both should be strings (uniqueness depends on implementation)
       assert.ok(typeof title1 === 'string');
       assert.ok(typeof title2 === 'string');
@@ -117,14 +119,14 @@ describe('Utility Functions', function () {
     it('should handle async processing with basic file', async function () {
       const file = {
         title: 'Test File',
-        contents: Buffer.from('Test content')
+        contents: Buffer.from('Test content'),
       };
-      
+
       const options = {
         async: true,
-        batchSize: 10
+        batchSize: 10,
       };
-      
+
       // Should not throw errors
       try {
         await processAsync(file, 'test.md', options);
@@ -137,13 +139,13 @@ describe('Utility Functions', function () {
 
     it('should handle async processing with empty file', async function () {
       const file = {
-        contents: Buffer.from('')
+        contents: Buffer.from(''),
       };
-      
+
       const options = {
-        async: true
+        async: true,
       };
-      
+
       try {
         await processAsync(file, 'empty.md', options);
         assert.ok(true, 'Async processing handled empty file');
@@ -155,15 +157,15 @@ describe('Utility Functions', function () {
     it('should handle async processing disabled', async function () {
       const file = {
         title: 'Test File',
-        contents: Buffer.from('Test content')
+        contents: Buffer.from('Test content'),
       };
-      
+
       const options = {
-        async: false
+        async: false,
       };
-      
+
       try {
-        const result = await processAsync(file, 'test.md', options);
+        await processAsync(file, 'test.md', options);
         // Should complete quickly if async is disabled
         assert.ok(true, 'Non-async processing completed');
       } catch (error) {
@@ -174,14 +176,14 @@ describe('Utility Functions', function () {
     it('should handle different file types', async function () {
       const file = {
         title: 'HTML File',
-        contents: Buffer.from('<h1>HTML Content</h1>')
+        contents: Buffer.from('<h1>HTML Content</h1>'),
       };
-      
+
       const options = {
         async: true,
-        stripHtml: true
+        stripHtml: true,
       };
-      
+
       try {
         await processAsync(file, 'test.html', options);
         assert.ok(true, 'Async processing handled HTML file');
@@ -195,15 +197,15 @@ describe('Utility Functions', function () {
     it('should detect searchable content', function () {
       const validFile = {
         contents: Buffer.from('# Test Content'),
-        title: 'Test'
+        title: 'Test',
       };
-      
+
       assert.ok(hasSearchableContent(validFile, 'test.md'));
-      
+
       const emptyFile = {
-        contents: Buffer.from('')
+        contents: Buffer.from(''),
       };
-      
+
       assert.ok(!hasSearchableContent(emptyFile, 'empty.md'));
     });
 
@@ -211,26 +213,28 @@ describe('Utility Functions', function () {
       assert.ok(isBinaryFile(Buffer.from('test'), 'image.jpg'));
       assert.ok(isBinaryFile(Buffer.from('test'), 'document.pdf'));
       assert.ok(!isBinaryFile(Buffer.from('text content'), 'document.md'));
-      
+
       // Test null byte detection
-      const binaryContent = Buffer.from([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x57, 0x6f, 0x72, 0x6c, 0x64]);
+      const binaryContent = Buffer.from([
+        0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x57, 0x6f, 0x72, 0x6c, 0x64,
+      ]);
       assert.ok(isBinaryFile(binaryContent, 'test.txt'));
     });
 
     it('should validate files for search', function () {
       const validFile = {
         contents: Buffer.from('# Valid Content'),
-        title: 'Test'
+        title: 'Test',
       };
-      
+
       const result = validateFileForSearch(validFile, 'test.md');
       assert.ok(result.valid);
       assert.ok(result.canProcess);
-      
+
       const invalidFile = {
-        contents: 'not a buffer'
+        contents: 'not a buffer',
       };
-      
+
       const invalidResult = validateFileForSearch(invalidFile, 'invalid.md');
       assert.ok(!invalidResult.valid);
       assert.ok(!invalidResult.canProcess);
@@ -240,19 +244,19 @@ describe('Utility Functions', function () {
       const files = {
         'good.md': {
           contents: Buffer.from('# Good content'),
-          title: 'Good'
+          title: 'Good',
         },
         'empty.md': {
-          contents: Buffer.from('')
+          contents: Buffer.from(''),
         },
         'binary.jpg': {
-          contents: Buffer.from([0x00, 0x01, 0x02])
-        }
+          contents: Buffer.from([0x00, 0x01, 0x02]),
+        },
       };
-      
+
       const filenames = Object.keys(files);
       const filtered = filterAndSortFiles(files, filenames);
-      
+
       assert.ok(filtered.includes('good.md'));
       assert.ok(!filtered.includes('empty.md'));
       assert.ok(!filtered.includes('binary.jpg'));
@@ -284,16 +288,17 @@ describe('Utility Functions', function () {
               title: 'Metalsmith Components',
               titleTag: 'h1',
               subTitle: 'A collection of section components for Metalsmith in 2025 and beyond',
-              prose: 'This website provides page sections components. The page sections are bare-bones interpretations of universal information presentation patterns that can be found on almost every website.'
+              prose:
+                'This website provides page sections components. The page sections are bare-bones interpretations of universal information presentation patterns that can be found on almost every website.',
             },
             ctas: [
               {
                 url: '/library',
                 label: 'Go to the Library',
                 isButton: true,
-                buttonStyle: 'primary'
-              }
-            ]
+                buttonStyle: 'primary',
+              },
+            ],
           },
           {
             sectionType: 'text-only',
@@ -303,8 +308,9 @@ describe('Utility Functions', function () {
             text: {
               title: 'Building Pages with Metalsmith Components',
               titleTag: 'h2',
-              prose: 'Metalsmith Components provide a modular approach to page construction. Instead of embedding all content within markdown body text, pages are assembled from **reusable components** defined in structured frontmatter.'
-            }
+              prose:
+                'Metalsmith Components provide a modular approach to page construction. Instead of embedding all content within markdown body text, pages are assembled from **reusable components** defined in structured frontmatter.',
+            },
           },
           {
             sectionType: 'multi-media',
@@ -313,16 +319,17 @@ describe('Utility Functions', function () {
             text: {
               leadIn: 'And what is this?',
               title: 'Media Section Example',
-              titleTag: 'h2', 
-              prose: 'Example of a media section with text and image. The text area has a `lead-in`, **title**, sub-title, and prose.'
+              titleTag: 'h2',
+              prose:
+                'Example of a media section with text and image. The text area has a `lead-in`, **title**, sub-title, and prose.',
             },
             image: {
               src: '/assets/images/sample7.jpg',
               alt: 'nunjucks',
-              caption: 'Tortor Bibendum Sit Egestas'
-            }
-          }
-        ]
+              caption: 'Tortor Bibendum Sit Egestas',
+            },
+          },
+        ],
       };
 
       const options = {
@@ -331,45 +338,56 @@ describe('Utility Functions', function () {
         autoDetectSectionTypes: true,
         sectionTypes: ['hero', 'text-only', 'multi-media'],
         componentFields: {
-          'hero': ['title', 'prose', 'leadIn'],
+          hero: ['title', 'prose', 'leadIn'],
           'text-only': ['title', 'prose', 'leadIn'],
-          'multi-media': ['title', 'prose', 'leadIn']
+          'multi-media': ['title', 'prose', 'leadIn'],
         },
         stripHtml: false,
-        generateAnchors: true
+        generateAnchors: true,
       };
 
       // Mock metalsmith debug function
       const mockMetalsmith = {
-        debug: () => () => {}
+        debug: () => () => {},
       };
 
-      const entries = await extractSearchableContent(file, 'real-world-example.md', options, mockMetalsmith);
+      const entries = await extractSearchableContent(
+        file,
+        'real-world-example.md',
+        options,
+        mockMetalsmith
+      );
 
       // Should extract both page and section entries
       assert.ok(entries.length > 0, 'Should extract search entries');
-      
+
       // Should have page entry
-      const pageEntry = entries.find(e => e.type === 'page');
+      const pageEntry = entries.find((e) => e.type === 'page');
       assert.ok(pageEntry, 'Should have page-level entry');
       assert.ok(pageEntry.pageName, 'Page entry should have pageName field');
-      
+
       // Should have section entries with extracted nested content
-      const sectionEntries = entries.filter(e => e.type === 'section');
+      const sectionEntries = entries.filter((e) => e.type === 'section');
       assert.ok(sectionEntries.length > 0, 'Should have section-level entries');
-      
+
       // Test that nested content is extracted correctly
-      const heroEntry = sectionEntries.find(e => e.sectionType === 'hero');
+      const heroEntry = sectionEntries.find((e) => e.sectionType === 'hero');
       assert.ok(heroEntry, 'Should have hero section entry');
-      assert.ok(heroEntry.title.includes('Metalsmith Components'), 'Should extract nested title from section.text.title');
-      assert.ok(heroEntry.prose.includes('page sections components'), 'Should extract nested prose from section.text.prose');
-      
-      const textEntry = sectionEntries.find(e => e.sectionType === 'text-only');
+      assert.ok(
+        heroEntry.title.includes('Metalsmith Components'),
+        'Should extract nested title from section.text.title'
+      );
+      assert.ok(
+        heroEntry.prose.includes('page sections components'),
+        'Should extract nested prose from section.text.prose'
+      );
+
+      const textEntry = sectionEntries.find((e) => e.sectionType === 'text-only');
       assert.ok(textEntry, 'Should have text-only section entry');
       assert.ok(textEntry.title.includes('Building Pages'), 'Should extract nested title');
       assert.ok(textEntry.prose.includes('modular approach'), 'Should extract nested prose');
-      
-      const mediaEntry = sectionEntries.find(e => e.sectionType === 'multi-media');
+
+      const mediaEntry = sectionEntries.find((e) => e.sectionType === 'multi-media');
       assert.ok(mediaEntry, 'Should have multi-media section entry');
       assert.ok(mediaEntry.leadIn.includes('what is this'), 'Should extract nested leadIn');
       assert.ok(mediaEntry.title.includes('Media Section'), 'Should extract nested title');
@@ -385,12 +403,12 @@ describe('Utility Functions', function () {
               main: {
                 text: {
                   title: 'Deep Title',
-                  prose: 'Deep prose content'
-                }
-              }
-            }
-          }
-        ]
+                  prose: 'Deep prose content',
+                },
+              },
+            },
+          },
+        ],
       };
 
       const options = {
@@ -398,20 +416,29 @@ describe('Utility Functions', function () {
         sectionsField: 'sections',
         sectionTypes: ['complex'],
         componentFields: {
-          'complex': ['title', 'prose']
-        }
+          complex: ['title', 'prose'],
+        },
       };
 
       const mockMetalsmith = {
-        debug: () => () => {}
+        debug: () => () => {},
       };
 
-      const entries = await extractSearchableContent(file, 'deep-nested.md', options, mockMetalsmith);
-      
-      const sectionEntry = entries.find(e => e.type === 'section');
+      const entries = await extractSearchableContent(
+        file,
+        'deep-nested.md',
+        options,
+        mockMetalsmith
+      );
+
+      const sectionEntry = entries.find((e) => e.type === 'section');
       assert.ok(sectionEntry, 'Should extract section entry');
       assert.strictEqual(sectionEntry.title, 'Deep Title', 'Should find deeply nested title');
-      assert.strictEqual(sectionEntry.prose, 'Deep prose content', 'Should find deeply nested prose');
+      assert.strictEqual(
+        sectionEntry.prose,
+        'Deep prose content',
+        'Should find deeply nested prose'
+      );
     });
 
     it('should handle mixed flat and nested structures', async function () {
@@ -421,16 +448,16 @@ describe('Utility Functions', function () {
           {
             sectionType: 'flat',
             title: 'Flat Title',
-            prose: 'Flat prose'
+            prose: 'Flat prose',
           },
           {
             sectionType: 'nested',
             text: {
               title: 'Nested Title',
-              prose: 'Nested prose'
-            }
-          }
-        ]
+              prose: 'Nested prose',
+            },
+          },
+        ],
       };
 
       const options = {
@@ -438,25 +465,113 @@ describe('Utility Functions', function () {
         sectionsField: 'sections',
         sectionTypes: ['flat', 'nested'],
         componentFields: {
-          'flat': ['title', 'prose'],
-          'nested': ['title', 'prose']
-        }
+          flat: ['title', 'prose'],
+          nested: ['title', 'prose'],
+        },
       };
 
       const mockMetalsmith = {
-        debug: () => () => {}
+        debug: () => () => {},
       };
 
       const entries = await extractSearchableContent(file, 'mixed.md', options, mockMetalsmith);
-      
-      const flatEntry = entries.find(e => e.sectionType === 'flat');
-      const nestedEntry = entries.find(e => e.sectionType === 'nested');
-      
+
+      const flatEntry = entries.find((e) => e.sectionType === 'flat');
+      const nestedEntry = entries.find((e) => e.sectionType === 'nested');
+
       assert.ok(flatEntry, 'Should extract flat structure');
       assert.strictEqual(flatEntry.title, 'Flat Title', 'Should find flat title');
-      
+
       assert.ok(nestedEntry, 'Should extract nested structure');
       assert.strictEqual(nestedEntry.title, 'Nested Title', 'Should find nested title');
+    });
+  });
+
+  describe('Configuration Functions', function () {
+    it('should handle invalid input in normalizeToArray', async function () {
+      const { normalizeToArray } = await import('../src/utils/config.js');
+
+      const result1 = normalizeToArray(null);
+      assert.deepStrictEqual(result1, []);
+
+      const result2 = normalizeToArray(undefined);
+      assert.deepStrictEqual(result2, []);
+
+      const result3 = normalizeToArray(123);
+      assert.deepStrictEqual(result3, []);
+    });
+
+    it('should handle validateFiles without ignore patterns', async function () {
+      const { validateFiles } = await import('../src/utils/config.js');
+      const Metalsmith = (await import('metalsmith')).default;
+
+      const config = {
+        pattern: ['**/*.md', '**/*.html'],
+        ignore: [], // Empty ignore array to test the hasIgnorePatterns branch
+      };
+
+      const files = {
+        'test.md': { contents: Buffer.from('content') },
+        'test.html': { contents: Buffer.from('<p>content</p>') },
+        'test.txt': { contents: Buffer.from('content') },
+      };
+
+      const metalsmith = Metalsmith(__dirname);
+
+      const result = validateFiles(files, config, metalsmith);
+      assert.ok(Array.isArray(result));
+      assert.ok(result.includes('test.md'));
+      assert.ok(result.includes('test.html'));
+      assert.ok(!result.includes('test.txt'));
+    });
+  });
+
+  describe('Plugin Helpers', function () {
+    it('should test hasIgnorePatterns function', async function () {
+      const { hasIgnorePatterns } = await import('../src/utils/config.js');
+
+      // Test empty array
+      assert.ok(!hasIgnorePatterns([]));
+
+      // Test array with empty strings - still returns true because array has length
+      assert.ok(hasIgnorePatterns(['', '  ']));
+
+      // Test array with valid patterns
+      assert.ok(hasIgnorePatterns(['*.tmp', 'node_modules/**']));
+
+      // Test single pattern
+      assert.ok(hasIgnorePatterns(['*.tmp']));
+    });
+
+    it('should test deepMerge with complex nested objects', async function () {
+      const { deepMerge } = await import('../src/utils/config.js');
+
+      const source = {
+        a: 1,
+        nested: {
+          x: 10,
+          y: { z: 100 },
+        },
+      };
+
+      const target = {
+        a: 2,
+        b: 3,
+        nested: {
+          x: 20,
+          y: { w: 200 },
+          z: 30,
+        },
+      };
+
+      const result = deepMerge(source, target);
+
+      assert.strictEqual(result.a, 2); // target overwrites
+      assert.strictEqual(result.b, 3); // target adds
+      assert.strictEqual(result.nested.x, 20); // nested overwrite
+      assert.strictEqual(result.nested.y.z, 100); // deep nested from source
+      assert.strictEqual(result.nested.y.w, 200); // deep nested from target
+      assert.strictEqual(result.nested.z, 30); // nested from target
     });
   });
 

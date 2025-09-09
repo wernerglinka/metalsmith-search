@@ -19,32 +19,32 @@ import { isCriticalFileError, shouldProcessAsync } from '../utils/plugin-helpers
  */
 export async function processBatch(batch, files, options, debug, metalsmith) {
   const searchEntries = [];
-  
+
   await Promise.all(
     batch.map(async (filename) => {
       try {
         const file = files[filename];
-        
+
         // Quick validation using the file filter
         const validation = validateFileForSearch(file, filename, options);
         if (!validation.canProcess) {
           debug(`Skipping ${filename}: ${validation.issues.join(', ')}`);
           return;
         }
-        
+
         debug(`Processing file: ${filename} (priority: ${validation.priority})`);
-        
+
         // Extract searchable content from the file
         const fileSearchEntries = await extractSearchableContent(
-          file, 
-          filename, 
+          file,
+          filename,
           options,
           metalsmith
         );
-        
+
         // Add entries to our collection
         searchEntries.push(...fileSearchEntries);
-        
+
         // Apply async processing if enabled
         if (shouldProcessAsync(options)) {
           try {
@@ -54,23 +54,23 @@ export async function processBatch(batch, files, options, debug, metalsmith) {
             // Continue processing but log the error
           }
         }
-        
+
         debug(`Successfully processed: ${filename} (${fileSearchEntries.length} entries)`);
       } catch (error) {
         debug(`Error processing ${filename}:`, error);
-        
+
         // Handle error based on type
         if (isCriticalFileError(error)) {
           throw new Error(`Critical file validation error for ${filename}: ${error.message}`);
         }
-        
+
         // For content extraction errors, log but continue
         debug(`Skipping ${filename} due to processing error: ${error.message}`);
         // Don't throw - continue with other files
       }
     })
   );
-  
+
   return searchEntries;
 }
 
@@ -85,14 +85,14 @@ export async function processBatch(batch, files, options, debug, metalsmith) {
  */
 export async function processAllFiles(filesToProcess, files, options, debug, metalsmith) {
   const allSearchEntries = [];
-  
+
   // Process files in batches for better performance
   for (let i = 0; i < filesToProcess.length; i += options.batchSize) {
     const batch = filesToProcess.slice(i, i + options.batchSize);
     const batchEntries = await processBatch(batch, files, options, debug, metalsmith);
     allSearchEntries.push(...batchEntries);
   }
-  
+
   debug(`Extracted ${allSearchEntries.length} total search entries`);
   return allSearchEntries;
 }

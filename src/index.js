@@ -11,8 +11,6 @@ import { deepMerge, defaultOptions } from './utils/config.js';
 import { processAllFiles } from './processors/file-processor.js';
 import { setupFileProcessing, createAndSaveIndex } from './utils/index-helpers.js';
 
-
-
 /**
  * Plugin options
  * @typedef {Object} Options
@@ -49,34 +47,34 @@ import { setupFileProcessing, createAndSaveIndex } from './utils/index-helpers.j
 export default function search(options = {}) {
   // Normalize options with defaults
   const config = deepMerge(defaultOptions, options);
-  
+
   // Return the actual plugin function (two-phase pattern)
   const metalsmithPlugin = async function (files, metalsmith, done) {
     const debug = metalsmith.debug('metalsmith-search');
     debug('Starting metalsmith-search with options:', config);
-    
+
     try {
       // Setup and validate files for processing
-      const setup = await setupFileProcessing(files, config, metalsmith, debug);
-      
+      const setup = setupFileProcessing(files, config, metalsmith, debug);
+
       if (setup.shouldExit) {
         return done();
       }
-      
+
       const { normalizedOptions, filesToProcess } = setup;
-      
+
       // Process all files and collect search entries
       const allSearchEntries = await processAllFiles(
-        filesToProcess, 
-        files, 
-        normalizedOptions, 
-        debug, 
+        filesToProcess,
+        files,
+        normalizedOptions,
+        debug,
         metalsmith
       );
-      
+
       // Create and save the search index
-      await createAndSaveIndex(allSearchEntries, files, normalizedOptions, debug);
-      
+      createAndSaveIndex(allSearchEntries, files, normalizedOptions, debug);
+
       debug('metalsmith-search completed successfully');
       done();
     } catch (error) {
@@ -86,13 +84,10 @@ export default function search(options = {}) {
   };
 
   // Set function name for debugging (helps with stack traces and debugging)
-  Object.defineProperty(metalsmithPlugin, 'name', { 
+  Object.defineProperty(metalsmithPlugin, 'name', {
     value: 'searchPlugin',
-    configurable: true 
+    configurable: true,
   });
-  
+
   return metalsmithPlugin;
 }
-
-
-

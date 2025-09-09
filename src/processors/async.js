@@ -13,11 +13,11 @@ function validateFileForProcessing(file, filename) {
   if (!file) {
     return { valid: false, error: `File object is null: ${filename}` };
   }
-  
+
   if (!Buffer.isBuffer(file.contents)) {
     return { valid: false, error: `File contents is not a Buffer: ${filename}` };
   }
-  
+
   return { valid: true };
 }
 
@@ -36,19 +36,17 @@ export async function processAsync(file, filename, options) {
     if (!validation.valid) {
       throw new Error(validation.error);
     }
-    
+
     // Early return if async processing disabled
     if (!options.async) {
       return;
     }
-    
+
     // Future async processing features would go here
     // Examples: external API calls, image processing, text analysis
-    await new Promise(resolve => setTimeout(resolve, 1));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1));
   } catch (error) {
     // Re-throw with context for better error messages
     throw new Error(`Async processing failed for ${filename}: ${error.message}`);
   }
 }
-
