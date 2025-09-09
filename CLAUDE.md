@@ -1,8 +1,12 @@
-#  - Development Context
+# metalsmith-search - Development Context
 
 ## Project Overview
 
-This is a Metalsmith plugin generated using the enhanced standards from `metalsmith-plugin-mcp-server`. It follows modern JavaScript patterns with dual ESM/CommonJS support and comprehensive testing.
+This is a **modern Metalsmith search plugin** that represents a quantum leap beyond legacy solutions like metalsmith-lunr. Built from the ground up using enhanced standards from `metalsmith-plugin-mcp-server`, it combines cutting-edge search technology (Fuse.js) with deep understanding of modern Metalsmith architectures.
+
+**Version**: 0.0.1 (Initial Release)
+**Technology**: Fuse.js-powered fuzzy search with component-based indexing
+**Architecture**: Dual ESM/CommonJS support with comprehensive testing
 
 ## MCP Server Integration (CRITICAL)
 
@@ -126,6 +130,90 @@ npm run release:minor  # For new features (0.X.0)
 npm run release:major  # For breaking changes (X.0.0)
 ```
 
+## Key Learnings from Development
+
+### 1. Component-Based vs Traditional Content Architecture
+
+**Discovery**: Modern Metalsmith sites (2025 pattern) use component-based architecture with sections arrays, while traditional sites use long-form markdown content. The plugin needed to support both paradigms seamlessly.
+
+**Solution**: 
+- **Component-based processing**: Extracts content from frontmatter sections arrays
+- **Traditional processing**: Intelligent chunking of long markdown content
+- **Unified indexing**: Both approaches feed into the same Fuse.js search index
+
+```javascript
+// Component-based extraction (modern)
+sections: [
+  {
+    sectionType: 'hero',
+    text: { title: 'Title', prose: 'Content...' }
+  }
+]
+
+// Traditional extraction (legacy support)
+# Long Article Title
+Content that gets intelligently chunked...
+```
+
+### 2. Pipeline Positioning Strategy
+
+**Critical Discovery**: Plugin must run **late in the Metalsmith pipeline** after content processing but still have access to original frontmatter.
+
+**Rationale**:
+- ✅ Access to processed HTML content from layouts/templates
+- ✅ Access to original frontmatter metadata
+- ✅ All content transformations are complete
+- ✅ Perfect for production builds only
+
+```javascript
+// Optimal pipeline position
+Metalsmith(__dirname)
+  .use(layouts())           // Content processing
+  .use(collections())       // Metadata organization
+  .use(search({            // Search indexing (LATE STAGE)
+    pattern: '**/*.html',   // Process final HTML
+    indexLevels: ['page', 'section']
+  }))
+```
+
+### 3. Metalsmith Philosophy: Real Web Technologies
+
+**Key Insight**: User feedback emphasized "Metalsmith builds pages with real HTML, CSS and plain JavaScript" - not React or other frameworks.
+
+**Implementation Impact**:
+- Removed React examples from documentation
+- Focused on vanilla JavaScript client-side integration
+- Emphasized progressive enhancement approach
+- Generated search indexes work with any JavaScript framework or no framework
+
+### 4. Frontmatter Markdown Processing
+
+**Challenge**: Any frontmatter field might contain markdown that needs processing for search.
+
+**Solution**: 
+```javascript
+// Process markdown in frontmatter fields
+processMarkdownFields: true,
+frontmatterFields: ['summary', 'intro', 'leadIn', 'subTitle', 'abstract']
+```
+
+This ensures rich metadata is properly indexed regardless of where it appears in the content structure.
+
+### 5. Performance Optimization Insights
+
+**Batch Processing**: Large sites need efficient processing
+```javascript
+batchSize: 10, // Process files in batches
+async: false   // Enable for very large sites
+```
+
+**Content Chunking**: Long articles need intelligent splitting
+```javascript
+maxSectionLength: 2000, // Split long sections
+chunkSize: 1500,        // Target chunk size
+minSectionLength: 50    // Skip tiny sections
+```
+
 ## Development Architecture
 
 ### Dual Module Support
@@ -141,16 +229,34 @@ This plugin supports both ESM and CommonJS:
 ```
 /
 ├── src/
-│   ├── index.js              # Main plugin entry point│   ├── processors/           # Processing logic│   └── utils/                # Utility functions
+│   ├── index.js                    # Main plugin entry point
+│   ├── processors/
+│   │   ├── async.js               # Async processing utilities
+│   │   ├── content-extractor.js   # Multi-level content extraction
+│   │   └── search-indexer.js      # Fuse.js index generation
+│   └── utils/
+│       ├── anchor-generator.js    # URL-safe anchor creation
+│       ├── config.js              # Configuration utilities
+│       └── html-stripper.js       # Semantic HTML processing
 ├── test/
-│   ├── index.test.js         # ESM tests
-│   ├── index.test.cjs        # CommonJS tests
-│   └── fixtures/             # Test data
-├── lib/                      # Built files (auto-generated)
-└── types/                    # TypeScript definitions
+│   ├── index.test.js              # ESM tests
+│   ├── cjs.test.cjs               # CommonJS tests
+│   └── fixtures/                  # Component-based and traditional test content
+├── lib/                           # Built files (auto-generated)
+└── README.md                      # Comprehensive docs with Theory of Operation
 ```
 
-### Plugin FeaturesThis plugin includes these enhanced features:- **Async Processing**: Batch processing with configurable batch sizes and progress tracking
+### Plugin Features
+
+This plugin includes these enhanced features:
+
+- **Multi-Level Indexing**: Page, section, and component-level search entries
+- **Dual Content Architecture**: Supports both modern component-based sites and traditional long-form content
+- **Intelligent Content Chunking**: Automatic splitting of long articles with heading-based navigation
+- **Frontmatter Markdown Processing**: Processes markdown in any frontmatter field
+- **Async Processing**: Batch processing with configurable batch sizes and progress tracking
+- **Semantic HTML Stripping**: Preserves readability while removing markup
+- **Pipeline Optimization**: Positioned for late-stage processing with full content access
 ## Testing Strategy
 
 ### Test Structure
@@ -200,38 +306,74 @@ npm run test:coverage
 - README with comprehensive usage examples
 - Type definitions in `types/` directory
 
-## Plugin Development Patterns
-
-### Basic Plugin Structure
+### Modern Search Plugin Pattern
 
 ```javascript
 /**
- * Search function for metalsmith
+ * Modern Metalsmith search plugin with Fuse.js
  * @param {Object} options - Plugin configuration
  * @returns {Function} Metalsmith plugin function
  */
-function (options = {}) {
-  return function(files, metalsmith, callback) {
-    // Plugin logic here
-    callback();
+function search(options = {}) {
+  const config = deepMerge(defaults, options);
+  
+  return async function(files, metalsmith, done) {
+    const debug = metalsmith.debug('metalsmith-search');
+    
+    try {
+      // Multi-level content extraction
+      const allSearchEntries = [];
+      
+      // Batch processing for performance
+      for (let i = 0; i < filesToProcess.length; i += config.batchSize) {
+        const batch = filesToProcess.slice(i, i + config.batchSize);
+        // Process batch...
+      }
+      
+      // Generate Fuse.js compatible index
+      const searchIndex = await createSearchIndex(allSearchEntries, config);
+      
+      // Add to Metalsmith files
+      files[config.indexPath] = {
+        contents: Buffer.from(JSON.stringify(searchIndex, null, 2))
+      };
+      
+      done();
+    } catch (error) {
+      done(error);
+    }
   };
 }
 
-export default ;
+export default search;
 ```
 
-### Error Handling
+### Multi-Level Content Extraction Pattern
 
 ```javascript
-function (options = {}) {
-  return function(files, metalsmith, callback) {
-    try {
-      // Plugin processing
-      callback();
-    } catch (error) {
-      callback(error);
+// Extract searchable content from multiple levels
+async function extractSearchableContent(file, filename, options, metalsmith) {
+  const entries = [];
+  
+  // Page-level extraction
+  if (options.indexLevels.includes('page')) {
+    entries.push(await extractPageLevel(file, filename, options));
+  }
+  
+  // Section-level extraction (component-based)
+  if (options.indexLevels.includes('section') && file.sections) {
+    for (const section of file.sections) {
+      entries.push(await extractSectionLevel(section, filename, options));
     }
-  };
+  }
+  
+  // Traditional content chunking
+  if (file.contents && !file.sections) {
+    const chunks = await chunkContent(file.contents, options);
+    entries.push(...chunks);
+  }
+  
+  return entries;
 }
 ```
 ### Async Processing Pattern
@@ -348,4 +490,31 @@ const metalsmith = Metalsmith(__dirname)
 - **Follow patterns** - Use existing utilities and conventions
 - **Document changes** - Update JSDoc and README as needed
 
-This plugin follows the enhanced standards from `metalsmith-plugin-mcp-server` and is designed for modern Metalsmith development workflows.
+## Development Lessons Summary
+
+### Technical Achievements
+1. **Dual Architecture Support**: Seamlessly handles both modern component-based and traditional markdown content
+2. **Pipeline Optimization**: Strategic late-stage positioning for optimal content access
+3. **Performance Engineering**: Intelligent batching and content chunking for large sites
+4. **Standards Compliance**: Full ESM/CommonJS support with comprehensive testing
+5. **Fuse.js Integration**: Modern fuzzy search replacing legacy Lunr.js solutions
+
+### Philosophical Insights
+1. **Web Standards First**: Metalsmith's strength is generating real HTML/CSS/JavaScript
+2. **Progressive Enhancement**: Search works with or without JavaScript frameworks
+3. **Content Flexibility**: Support both cutting-edge and traditional content patterns
+4. **Production Focus**: Late pipeline positioning enables production-only search indexing
+
+### Best Practices Established
+1. **MCP Server Integration**: Always use official templates and validation tools
+2. **Multi-Level Testing**: Test both ESM and CommonJS builds with realistic content
+3. **Comprehensive Documentation**: Include Theory of Operation for complex plugins
+4. **User-Centered Design**: Listen to real-world feedback and adapt accordingly
+
+### Critical Development Fixes Applied
+1. **Build Error Resolution**: Created missing `src/processors/async.js` file
+2. **Test Pattern Alignment**: Updated package.json scripts to match actual test filenames
+3. **Fixture Structure**: Organized test content in proper Metalsmith src/ directory structure
+4. **Documentation Refinement**: Removed framework-specific examples per user feedback
+
+This plugin follows the enhanced standards from `metalsmith-plugin-mcp-server` and represents modern Metalsmith development workflows with lessons learned from real-world implementation and user feedback.

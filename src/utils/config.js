@@ -13,6 +13,60 @@
 // No external imports needed - we use Metalsmith's built-in match() method for file patterns
 
 /**
+ * Default plugin options
+ * @type {Object}
+ * @property {string} pattern - Files to process (always exists after merge)
+ * @property {string[]} ignore - Files to ignore (always exists after merge)
+ * 
+ * IMPORTANT: After deepMerge(defaults, userOptions), all default properties
+ * are guaranteed to exist. User options can override values but cannot remove
+ * properties. This means:
+ * - pattern will NEVER be null or undefined
+ * - ignore will NEVER be null or undefined
+ */
+export const defaultOptions = {
+  pattern: '**/*.md',
+  ignore: ['**/search-index.json'],
+  async: false,
+  batchSize: 10,
+  
+  // Search-specific options
+  indexPath: 'search-index.json',
+  indexLevels: ['page', 'section'],
+  sectionsField: 'sections',
+  stripHtml: true,
+  generateAnchors: true,
+  lazyLoad: true,
+  
+  // Fuse.js options
+  fuseOptions: {
+    keys: [
+      { name: 'pageName', weight: 10 },  // Page name for high-priority search
+      { name: 'title', weight: 8 },      // Section/entry title  
+      { name: 'leadIn', weight: 5 },     // Optional frontmatter field
+      { name: 'prose', weight: 3 },      // Optional frontmatter field
+      { name: 'content', weight: 1 },    // Plugin-generated full content
+      { name: 'tags', weight: 6 }        // Content tags
+    ],
+    threshold: 0.3,
+    includeScore: true,
+    includeMatches: true,
+    minMatchCharLength: 3  // Skip stop words (to, be, or, etc.)
+  },
+  
+  // Component-aware indexing (auto-detected)
+  sectionTypeField: 'sectionType',
+  autoDetectSectionTypes: true,
+  
+  // Traditional content processing
+  maxSectionLength: 2000, // Split sections longer than this
+  chunkSize: 1500, // Target chunk size for long content
+  minSectionLength: 50, // Skip sections shorter than this
+  processMarkdownFields: true, // Process markdown in frontmatter
+  frontmatterFields: ['summary', 'intro', 'leadIn', 'subTitle', 'abstract', 'overview'] // Additional fields to index
+};
+
+/**
  * Deep merge configuration objects
  * 
  * Modern functional approach using reduce() and object spread.
@@ -38,26 +92,52 @@ const deepMerge = (target, source) =>
   );
 
 /**
+ * Convert string or invalid value to array
+ * @param {*} value - Value to normalize
+ * @returns {Array} Array version of value
+ */
+function normalizeToArray(value) {
+  if (typeof value === 'string') {
+    return [value];
+  }
+  
+  if (Array.isArray(value)) {
+    return value;
+  }
+  
+  return [];
+}
+
+/**
  * Normalize plugin options
  * @param {Object} options - Raw options (already merged with defaults)
  * @returns {Object} Normalized options
  */
 export function normalizeOptions(options) {
-  const normalized = { ...options };
-  
-  // Ensure pattern is an array (it's guaranteed to exist from defaults)
-  if (typeof normalized.pattern === 'string') {
-    normalized.pattern = [normalized.pattern];
-  }
-  
-  // Ensure ignore is an array (it's guaranteed to exist from defaults)
-  if (typeof normalized.ignore === 'string') {
-    normalized.ignore = [normalized.ignore];
-  } else if (!Array.isArray(normalized.ignore)) {
-    normalized.ignore = [];
-  }
-  
-  return normalized;
+  return {
+    ...options,
+    pattern: normalizeToArray(options.pattern),
+    ignore: normalizeToArray(options.ignore)
+  };
+}
+
+/**
+ * Check if files should be ignored
+ * @param {string[]} ignore - Ignore patterns
+ * @returns {boolean} True if there are patterns to ignore
+ */
+function hasIgnorePatterns(ignore) {
+  return ignore.length > 0;
+}
+
+/**
+ * Filter out ignored files from matched files
+ * @param {string[]} matchedFiles - Files that match include patterns
+ * @param {string[]} ignoredFiles - Files that match ignore patterns
+ * @returns {string[]} Filtered file list
+ */
+function filterIgnoredFiles(matchedFiles, ignoredFiles) {
+  return matchedFiles.filter(filename => !ignoredFiles.includes(filename));
 }
 
 /**
@@ -77,22 +157,17 @@ export function normalizeOptions(options) {
  */
 export function validateFiles(files, options, metalsmith) {
   const { pattern, ignore } = options;
-  const allFiles = Object.keys(files);  // Get all file paths in the build
-
-  // Use Metalsmith's native match method to find files matching our patterns
-  // This supports glob patterns like '**/*.md', 'src/*.js', etc.
+  const allFiles = Object.keys(files);
   const matchedFiles = metalsmith.match(pattern, allFiles);
 
-  // If no ignore patterns specified, return all matched files
-  if (ignore.length === 0) {
+  // Early return: no ignore patterns means no filtering needed
+  if (!hasIgnorePatterns(ignore)) {
     return matchedFiles;
   }
 
-  // Find files that match ignore patterns
+  // Filter out ignored files
   const ignoredFiles = metalsmith.match(ignore, allFiles);
-  
-  // Return matched files minus ignored files
-  return matchedFiles.filter(filename => !ignoredFiles.includes(filename));
+  return filterIgnoredFiles(matchedFiles, ignoredFiles);
 }
 
 // Export deepMerge for use in main plugin file
