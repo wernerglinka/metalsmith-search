@@ -557,6 +557,71 @@ const metalsmith = Metalsmith(__dirname)
 3. **Fixture Structure**: Organized test content in proper Metalsmith src/ directory structure
 4. **Documentation Refinement**: Removed framework-specific examples per user feedback
 
+## Search Quality Testing
+
+### Integrated Quality Assurance
+
+The plugin includes an integrated search quality test suite (`test/search-quality.test.js`) that validates the effectiveness of generated search indexes. This was adapted from the universal-search-tester toolkit and provides automated quality metrics.
+
+### Test Categories
+
+**Valid Terms (~10 terms)**
+- Common words that should return results: content, page, test, search, metalsmith
+- Tests that the search index properly captures real content
+
+**Invalid Terms (~10 terms)**
+- Nonsense that shouldn't return results: asdf, qwerty, xyz, zzz
+- Tests that the search doesn't produce false positives
+
+**Edge Cases (~11 terms)**
+- Special scenarios: empty strings, single characters, case variations
+- Tests robustness and error handling
+
+### Quality Metrics
+
+The test suite calculates a comprehensive quality score:
+- **Valid Terms Score**: % of valid terms that return results (target: ≥60%)
+- **Invalid Terms Score**: % of invalid terms correctly rejected (target: ≥70%)
+- **Edge Cases Score**: % of edge cases handled without errors (target: ≥90%)
+- **Overall Quality Score**: Weighted average (target: ≥65%)
+
+Current performance: **94% overall quality score**
+
+### Running Search Quality Tests
+
+```bash
+# Run as part of full test suite
+npm test
+
+# Run search quality test specifically
+npx mocha test/search-quality.test.js
+
+# View detailed metrics in test output
+# 📊 Search Quality Metrics:
+#    Valid Terms Score: 100.0%
+#    Invalid Terms Score: 80.0%
+#    Edge Cases Score: 100.0%
+#    Overall Quality: 94%
+```
+
+### Integration Benefits
+
+1. **Automated Validation**: Quality checks run with every test suite execution
+2. **No External Dependencies**: Uses lightweight built-in search implementation
+3. **Measurable Metrics**: Provides concrete quality scores for search effectiveness
+4. **CI/CD Ready**: Fails tests if quality drops below thresholds
+5. **Private Testing**: Not exposed to npm users, internal quality assurance only
+
+### Quality Thresholds
+
+The test suite enforces minimum quality standards:
+- Valid terms must have ≥60% success rate
+- Invalid terms must have ≥70% rejection rate  
+- Edge cases must have ≥90% handling rate
+- Overall quality must be ≥65%
+
+These thresholds ensure the search index maintains professional quality standards while allowing for the inherent fuzziness of search algorithms.
+
 This plugin follows the enhanced standards from `metalsmith-plugin-mcp-server` and represents modern
 Metalsmith development workflows with lessons learned from real-world implementation and user
 feedback.

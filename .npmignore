@@ -1,0 +1,33 @@
+# Test and development tools
+test/
+coverage/
+.nyc_output/
+
+# Documentation and notes
+notes/
+*.md
+!README.md
+CLAUDE.md
+
+# Configuration files
+.eslintrc*
+.prettierrc*
+.release-it.json
+eslint.config.js
+prettier.config.js
+
+# CI/CD
+.github/
+scripts/
+
+# OS and IDE files
+.DS_Store
+.vscode/
+.idea/
+
+# Source files (only include lib)
+src/
+
+# Environment files
+.env
+.env.*
