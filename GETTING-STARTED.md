@@ -1,13 +1,172 @@
-# Getting Started with Metalsmith Search
+# Getting Started with metalsmith-search
 
-This guide walks you through adding modern fuzzy search capabilities to your Metalsmith site using
-`metalsmith-search` with its clean markdown-first approach.
+This guide covers everything you need to know to implement search functionality in your Metalsmith
+site using Fuse.js-powered fuzzy search with component-based indexing.
+
+## Table of Contents
+
+1. [Theory of Operation](#theory-of-operation)
+2. [Quick Start](#quick-start)
+3. [Usage Patterns](#usage-patterns)
+4. [Advanced Features](#advanced-features)
+5. [Client-Side Implementation](#client-side-implementation)
+6. [Real-World Examples](#real-world-examples)
+7. [Migration Guide](#migration-guide)
 
 ## Prerequisites
 
 - Node.js 18 or higher
 - An existing Metalsmith project
 - Basic familiarity with Metalsmith plugins
+
+## Theory of Operation
+
+### Architecture Overview
+
+**metalsmith-search** creates search indexes by understanding both traditional and structured
+content Metalsmith site patterns. Unlike legacy plugins that treat pages as monolithic HTML
+documents, this plugin recognizes the compositional nature of modern web content and is designed to
+capture content before HTML processing.
+
+### Content Processing Pipeline
+
+1. **Clean Source Processing**: Plugin processes markdown files **before** HTML generation
+2. **File Analysis**: Examines each markdown file to determine its content architecture
+3. **Content Extraction**: Multiple extraction strategies handle different content patterns:
+   - **Component-based pages**: Extracts from structured `sections` arrays in frontmatter
+   - **Traditional pages**: Splits long-form content by headings and logical breaks
+   - **Mixed content**: Handles pages with both approaches seamlessly
+4. **Content Processing**:
+   - Processes clean markdown content (no HTML chrome)
+   - Handles markdown syntax in frontmatter fields
+   - Generates clean, searchable text
+5. **Enhanced Search Keys**: Creates entries with comprehensive field coverage:
+   - `title` (weight: 10) - Page/section titles
+   - `tags` (weight: 8) - Content tags
+   - `leadIn` (weight: 5) - Intro/summary fields
+   - `prose` (weight: 3) - Rich text content
+   - `content` (weight: 1) - Full processed content
+6. **Stop Word Filtering**: Automatically excludes words shorter than 3 characters
+7. **Intelligent Chunking**: Long content gets split into searchable sections
+8. **Index Generation**: Creates optimized Fuse.js-compatible search indexes
+9. **Anchor Generation**: Creates URL fragments for direct section linking
+
+### Smart Section Navigation
+
+The plugin indexes content at different levels to provide precise search results:
+
+**Page Results**: Find entire pages that match your search terms
+
+**Section Results**: Find specific sections within pages that contain your search terms
+
+When you click on a section result, the browser will:
+
+1. **Navigate to the page** containing that section
+2. **Scroll automatically** to the specific section
+3. **Highlight the search term** within that section
+
+This means you land exactly where the relevant content is, rather than having to scroll through an
+entire page looking for your search term.
+
+### Content Type Recognition
+
+#### Component-Based Content
+
+```yaml
+sections:
+  - sectionType: hero
+    text:
+      title: 'Welcome'
+      prose: 'Modern web **development** guide'
+  - sectionType: text-only
+    text:
+      prose: 'Comprehensive content here...'
+```
+
+For structured content pages, the plugin extracts each section as a separate search entry with
+proper component type classification.
+
+#### Traditional Content
+
+```markdown
+---
+title: 'Complete Guide'
+description: 'Learn about **modern development**'
+---
+
+# Introduction
+
+Traditional markdown content gets automatically split by headings.
+
+## Chapter 1: Fundamentals
+
+Each section becomes searchable with generated anchor links.
+```
+
+For long articles, the plugin automatically breaks content into smaller, logical sections at
+headings and paragraph breaks. This means when you search for something in a 5,000-word article,
+you'll jump directly to the relevant section instead of landing at the top and having to hunt
+through the entire page.
+
+#### Mixed Content (Hybrid Pattern)
+
+Pages may combine both approaches - structured content sections in frontmatter plus traditional
+markdown body content.
+
+### Search Index Structure
+
+Generated indexes follow this structure:
+
+```json
+{
+  "version": "0.0.1",
+  "generator": "metalsmith-search",
+  "generated": "2025-01-15T10:30:00.000Z",
+  "totalEntries": 42,
+  "config": {
+    "fuseOptions": { "threshold": 0.3, "keys": [...] },
+    "indexLevels": ["page", "section"],
+    "lazyLoad": true
+  },
+  "stats": {
+    "entriesByType": { "page": 10, "section": 32 },
+    "entriesBySectionType": { "hero": 5, "traditional": 15 },
+    "averageContentLength": 285
+  },
+  "entries": [
+    {
+      "id": "page:/about",
+      "type": "page",
+      "title": "About Us",
+      "pageName": "About Us - Company Information",
+      "content": "Complete page content...",
+      "url": "/about",
+      "tags": ["company", "team"],
+      "wordCount": 450
+    },
+    {
+      "id": "section:/about:0",
+      "type": "section",
+      "sectionType": "hero",
+      "title": "Our Mission",
+      "pageName": "About Us - Company Information",
+      "leadIn": "Building the future",
+      "prose": "Section content with nested extraction...",
+      "content": "Complete section content...",
+      "url": "/about#our-mission",
+      "sectionIndex": 0
+    }
+  ]
+}
+```
+
+### Performance Optimizations
+
+- **Batch Processing**: Files processed in configurable batches
+- **Content Chunking**: Long sections split for optimal search performance
+- **Index Compression**: Removes empty fields and optimizes data structures
+- **Lazy Loading**: Optional deferred index loading for large sites
+- **Caching-Friendly**: Static JSON indexes work with CDNs and browser caching
 
 ## Installation
 
@@ -57,7 +216,107 @@ node metalsmith.js
 This creates `build/search-index.json` containing your searchable content extracted from clean
 markdown files.
 
-## Client-Side Implementation
+## Usage Patterns
+
+### Component-Based Sites
+
+For Metalsmith sites using structured frontmatter:
+
+```js
+Metalsmith(__dirname)
+  .use(
+    search({
+      indexLevels: ['page', 'section'],
+      sectionTypes: ['hero', 'text-only', 'media-image', 'cta'],
+      generateAnchors: true,
+      fuseOptions: {
+        keys: [
+          { name: 'title', weight: 10 },
+          { name: 'tags', weight: 8 },
+          { name: 'leadIn', weight: 5 },
+          { name: 'prose', weight: 3 },
+          { name: 'content', weight: 1 }, // Generated content field
+        ],
+        minMatchCharLength: 3, // Filter stop words
+      },
+    })
+  )
+  .use(layouts()) // HTML generation after search indexing
+  .build((err) => {
+    if (err) throw err;
+  });
+```
+
+### Traditional Long-Form Sites
+
+Optimized for blogs, documentation, and article sites:
+
+```js
+Metalsmith(__dirname)
+  .use(
+    search({
+      indexLevels: ['page', 'section'],
+      maxSectionLength: 1500,
+      minSectionLength: 100,
+      processMarkdownFields: true,
+      frontmatterFields: ['summary', 'abstract', 'intro'],
+      fuseOptions: {
+        keys: [
+          { name: 'title', weight: 10 },
+          { name: 'tags', weight: 8 },
+          { name: 'content', weight: 1 }, // Main content field
+          { name: 'excerpt', weight: 2 },
+        ],
+        threshold: 0.2, // More precise matching for articles
+        minMatchCharLength: 3, // Filter stop words
+      },
+    })
+  )
+  .use(layouts()) // Process layouts after search indexing
+  .build((err) => {
+    if (err) throw err;
+  });
+```
+
+### Hybrid Sites (Best of Both)
+
+For sites mixing traditional and component-based content:
+
+```js
+Metalsmith(__dirname)
+  .use(
+    search({
+      // Index both patterns
+      indexLevels: ['page', 'section'],
+
+      // Component support
+      sectionTypes: ['hero', 'text-only', 'traditional'],
+      generateAnchors: true,
+
+      // Traditional content support
+      maxSectionLength: 2000,
+      chunkSize: 1500,
+      processMarkdownFields: true,
+
+      // Flexible search configuration
+      fuseOptions: {
+        keys: [
+          { name: 'title', weight: 8 },
+          { name: 'content', weight: 1 },
+          { name: 'leadIn', weight: 4 },
+          { name: 'prose', weight: 1 },
+        ],
+        threshold: 0.3,
+        includeMatches: true,
+      },
+    })
+  )
+  .build((err) => {
+    if (err) throw err;
+  });
+```
+
+## Client-Side Implementation Example
 
 ### Basic HTML Structure
 
@@ -370,15 +629,6 @@ myComponents: # Custom field name
 ---
 ```
 
-Common alternative field names:
-
-- `sections` (default)
-- `components`
-- `blocks`
-- `content`
-- `myComponents`
-- `pageComponents`
-
 ### Modern Component-Based Sites
 
 For sites using component-based architecture:
@@ -413,12 +663,12 @@ tags: ['web', 'development']
 Long-form content that gets automatically chunked for search...
 ```
 
-## Pipeline Positioning
+## Plugin Position
 
-**Important**: Place the search plugin **early** in the pipeline for clean content:
+**Important**: Place the search plugin before templates are applied:
 
 ```javascript
-Metalsmith(__dirname)
+metalsmith
   // Search plugin goes EARLY (recommended)
   .use(
     search({
@@ -433,24 +683,17 @@ Metalsmith(__dirname)
   .use(assets()); // Process assets after indexing
 ```
 
-**Benefits of Early Pipeline Positioning:**
-
-- ✅ **Clean Content**: Avoids HTML chrome (nav, headers, footers)
-- ✅ **Better Search Results**: No irrelevant page structure in index
-- ✅ **Smaller Index**: Only meaningful content is indexed
-- ✅ **Faster Processing**: Less content to parse and clean
-
-This approach ensures search processes:
+This approach ensures search:
 
 - Clean markdown source files
 - Pure frontmatter metadata
-- Content without HTML pollution
+- Content without HTML Tags pollution
 
 ## Advanced Features
 
 ### Page Context in Search Results
 
-Every search entry now includes a `pageName` field for better user experience. This helps users
+Every search entry includes a `pageName` field for better user experience. This helps users
 understand which page each result comes from:
 
 ```yaml
@@ -477,12 +720,12 @@ The plugin automatically finds content at any nesting level in your component st
 ```yaml
 sections:
   - sectionType: hero
-    text: # ✅ Level 1: text.title found
+    text: # Level 1: text.title found
       title: 'Hero Title'
       prose: 'Hero content'
 
   - sectionType: complex
-    content: # ✅ Level 2: content.main.text.title found
+    content: # Level 2: content.main.text.title found
       main:
         text:
           title: 'Deep Title'
@@ -497,22 +740,19 @@ No configuration needed - the plugin recursively searches all nested objects to 
 The plugin ensures perfect synchronization between search URLs and rendered HTML by automatically
 adding missing section IDs to your frontmatter:
 
-**Your template:**
-
-```html
-<section id="{{ section.id }}">
-  <h2>{{ section.text.title }}</h2>
-</section>
+```yaml
+sections:
+  - sectionType: hero
+    id: 'welcome-section' # Auto-generated from title
+    text:
+      title: 'Welcome Section'
+      prose: 'Content here'
 ```
 
-**Plugin processing:**
+**Result:**
 
-- Detects missing `section.id`
-- Generates ID from section title: `"welcome-section"`
-- Adds it to frontmatter: `section.id = "welcome-section"`
-- Creates search URL: `"/page#welcome-section"`
+- Search index: `"url": "/page#welcome-section"`
 - Template renders: `<section id="welcome-section">`
-- **Links work perfectly!** ✅
 
 ### Search Result Highlighting
 
@@ -596,6 +836,146 @@ function handleSearch(event) {
 }
 ```
 
+## Real-World Examples
+
+### Real-World Component Page
+
+Content from a modern Metalsmith site:
+
+```yaml
+---
+title: 'Modern Web Components'
+description: 'Build **reusable components** for modern web applications'
+sections:
+  - sectionType: hero
+    text:
+      title: 'Component Architecture'
+      prose: 'Modern web development uses **component-based patterns** for better maintainability.'
+  - sectionType: text-only
+    text:
+      prose: |-
+        ## Benefits of Components
+
+        Component-based architecture provides several advantages:
+        - Reusability across projects
+        - Better testing isolation
+        - Cleaner code organization
+
+        Each component handles a specific responsibility.
+---
+```
+
+**Generated Search Entries:**
+
+```json
+[
+  {
+    "id": "page:/components",
+    "type": "page",
+    "title": "Modern Web Components",
+    "content": "Build reusable components for modern web applications Modern web development uses component-based patterns...",
+    "url": "/components"
+  },
+  {
+    "id": "section:/components:0",
+    "type": "section",
+    "sectionType": "hero",
+    "title": "Component Architecture",
+    "content": "Component Architecture Modern web development uses component-based patterns for better maintainability.",
+    "url": "/components#component-architecture"
+  },
+  {
+    "id": "section:/components:1",
+    "type": "section",
+    "sectionType": "text-only",
+    "title": "Benefits of Components",
+    "content": "Benefits of Components Component-based architecture provides several advantages: Reusability across projects Better testing isolation...",
+    "url": "/components#benefits-of-components"
+  }
+]
+```
+
+### Traditional Long-Form Article
+
+Content from a traditional blog post:
+
+```markdown
+---
+title: 'Complete Metalsmith Guide'
+description: 'Learn **everything** about Metalsmith static site generation'
+summary: 'Comprehensive tutorial covering setup, plugins, and advanced techniques'
+---
+
+# Complete Metalsmith Guide
+
+Metalsmith is a powerful static site generator built on JavaScript.
+
+## Getting Started
+
+Installation is straightforward with npm...
+
+## Advanced Configuration
+
+For complex sites, consider these patterns...
+
+## Plugin Development
+
+Creating custom plugins requires understanding the Metalsmith API...
+```
+
+**Generated Search Entries:**
+
+- Page-level entry with processed frontmatter
+- Section entries for each heading (Getting Started, Advanced Configuration, Plugin Development)
+- Intelligent content chunking for long sections
+- Generated anchor links for direct section access
+
+## Migration Guide
+
+### Migration from metalsmith-lunr
+
+This plugin is a modern replacement for the ancient metalsmith-lunr. Key improvements:
+
+**Advantages over metalsmith-lunr:**
+
+- **No compatibility issues**: Works with current dependencies
+- **Better search**: Fuse.js provides superior fuzzy matching
+- **Smaller bundle**: 6.69kB vs 8.9kB (gzipped)
+- **Component awareness**: Understands modern site architectures
+- **Active maintenance**: Regular updates and bug fixes
+- **Modern JavaScript**: ESM/CJS support, async processing
+
+**Migration Guide:**
+
+```js
+// Old metalsmith-lunr
+import lunr from 'metalsmith-lunr';
+
+Metalsmith(__dirname).use(
+  lunr({
+    ref: 'title',
+    fields: {
+      contents: 1,
+      title: 10,
+    },
+  })
+);
+
+// New metalsmith-search
+import search from 'metalsmith-search';
+
+Metalsmith(__dirname).use(
+  search({
+    fuseOptions: {
+      keys: [
+        { name: 'content', weight: 1 },
+        { name: 'title', weight: 10 },
+      ],
+    },
+  })
+);
+```
+
 ## Debugging
 
 Enable debug logging to troubleshoot issues:
@@ -625,8 +1005,7 @@ This shows detailed information about:
   maxSectionLength: 1500,
   chunkSize: 1000,
 
-  // Reduce index size
-  stripHtml: true,
+  // Reduce index size,
   minSectionLength: 100
 }))
 ```
@@ -670,7 +1049,7 @@ metalsmith.build((err) => {
 
 **Large bundle size:**
 
-- Use `stripHtml: true` to remove markup
+- Use `stripHtml: true` (default) to remove markup
 - Increase `minSectionLength` to filter short content
 - Consider `lazyLoad: true` for large indexes
 
@@ -689,12 +1068,3 @@ If you encounter issues:
 2. Check the generated `search-index.json` file
 3. Verify your content structure matches the plugin's expectations
 4. Review the [README.md](./README.md) for detailed API documentation
-
-## Next Steps
-
-- Customize the search UI to match your site's design
-- Add advanced features like search suggestions or recent searches
-- Implement search analytics to understand user behavior
-- Consider adding search to your site's navigation
-
-Happy searching! 🔍
