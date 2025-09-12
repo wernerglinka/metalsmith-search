@@ -5,7 +5,6 @@
 
 import assert from 'assert';
 import { join, dirname } from 'path';
-import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import Metalsmith from 'metalsmith';
 import search from '../lib/index.js';
@@ -19,21 +18,23 @@ const fixtures = join(__dirname, 'fixtures');
 const testTerms = {
   // Valid terms that should return results
   validTerms: [
-    'content', 'page', 'test', 'search', 'metalsmith', 
-    'component', 'section', 'data', 'build', 'plugin'
+    'content',
+    'page',
+    'test',
+    'search',
+    'metalsmith',
+    'component',
+    'section',
+    'data',
+    'build',
+    'plugin',
   ],
-  
+
   // Invalid terms that should return few/no results
-  invalidTerms: [
-    'asdf', 'qwerty', 'xyz', 'zzz', 'qpzm',
-    'wxyz', 'mnbv', 'zxcv', 'hjkl', 'plkj'
-  ],
-  
+  invalidTerms: ['asdf', 'qwerty', 'xyz', 'zzz', 'qpzm', 'wxyz', 'mnbv', 'zxcv', 'hjkl', 'plkj'],
+
   // Edge cases to test robustness
-  edgeCases: [
-    '', ' ', '  ', '\t', '\n',
-    'a', 'i', 'ab', 'it', 'TEST', 'Test'
-  ]
+  edgeCases: ['', ' ', '  ', '\t', '\n', 'a', 'i', 'ab', 'it', 'TEST', 'Test'],
 };
 
 /**
@@ -46,7 +47,7 @@ class SimpleSearch {
       keys: options.keys || ['title', 'content'],
       threshold: options.threshold || 0.3,
       minMatchCharLength: options.minMatchCharLength || 2,
-      ...options
+      ...options,
     };
   }
 
@@ -62,12 +63,14 @@ class SimpleSearch {
       let hasMatch = false;
       let bestScore = 1;
 
-      this.options.keys.forEach(key => {
+      this.options.keys.forEach((key) => {
         const value = this.getNestedValue(item, key);
-        if (!value) return;
+        if (!value) {
+          return;
+        }
 
         const valueLower = String(value).toLowerCase();
-        
+
         // Simple scoring: exact match = 0.0, substring = 0.2, partial = 0.5+
         let score = 1;
         if (valueLower === queryLower) {
@@ -97,7 +100,9 @@ class SimpleSearch {
     let value = obj;
     for (const key of keys) {
       value = value?.[key];
-      if (value === undefined) return null;
+      if (value === undefined) {
+        return null;
+      }
     }
     return value;
   }
@@ -122,26 +127,24 @@ function calculateQualityScore(results) {
     validTermsScore: 0,
     invalidTermsScore: 0,
     edgeCasesScore: 0,
-    overallScore: 0
+    overallScore: 0,
   };
 
   // Valid terms should return results
-  const validSuccesses = results.validTerms.filter(r => r.resultCount > 0).length;
+  const validSuccesses = results.validTerms.filter((r) => r.resultCount > 0).length;
   metrics.validTermsScore = (validSuccesses / results.validTerms.length) * 100;
 
   // Invalid terms should NOT return results
-  const invalidSuccesses = results.invalidTerms.filter(r => r.resultCount === 0).length;
+  const invalidSuccesses = results.invalidTerms.filter((r) => r.resultCount === 0).length;
   metrics.invalidTermsScore = (invalidSuccesses / results.invalidTerms.length) * 100;
 
   // Edge cases should handle gracefully (no errors)
-  const edgeSuccesses = results.edgeCases.filter(r => !r.error).length;
+  const edgeSuccesses = results.edgeCases.filter((r) => !r.error).length;
   metrics.edgeCasesScore = (edgeSuccesses / results.edgeCases.length) * 100;
 
   // Overall score (weighted average)
   metrics.overallScore = Math.round(
-    (metrics.validTermsScore * 0.5) +
-    (metrics.invalidTermsScore * 0.3) +
-    (metrics.edgeCasesScore * 0.2)
+    metrics.validTermsScore * 0.5 + metrics.invalidTermsScore * 0.3 + metrics.edgeCasesScore * 0.2
   );
 
   return metrics;
@@ -154,96 +157,100 @@ function testSearchQuality(searchIndex, options = {}) {
   const searcher = new SimpleSearch(searchIndex.entries || searchIndex, {
     keys: ['title', 'content', 'pageName', 'leadIn', 'prose'],
     threshold: options.threshold || 0.6,
-    minMatchCharLength: 1
+    minMatchCharLength: 1,
   });
 
   const results = {
     validTerms: [],
     invalidTerms: [],
-    edgeCases: []
+    edgeCases: [],
   };
 
   // Test valid terms
-  testTerms.validTerms.forEach(term => {
+  testTerms.validTerms.forEach((term) => {
     try {
       const searchResults = searcher.search(term);
       results.validTerms.push({
         term,
         resultCount: searchResults.length,
-        topScore: searchResults[0]?.score || null
+        topScore: searchResults[0]?.score || null,
       });
     } catch (error) {
       results.validTerms.push({
         term,
         resultCount: 0,
-        error: error.message
+        error: error.message,
       });
     }
   });
 
   // Test invalid terms
-  testTerms.invalidTerms.forEach(term => {
+  testTerms.invalidTerms.forEach((term) => {
     try {
       const searchResults = searcher.search(term);
       results.invalidTerms.push({
         term,
         resultCount: searchResults.length,
-        topScore: searchResults[0]?.score || null
+        topScore: searchResults[0]?.score || null,
       });
     } catch (error) {
       results.invalidTerms.push({
         term,
         resultCount: 0,
-        error: error.message
+        error: error.message,
       });
     }
   });
 
   // Test edge cases
-  testTerms.edgeCases.forEach(term => {
+  testTerms.edgeCases.forEach((term) => {
     try {
       const searchResults = searcher.search(term);
       results.edgeCases.push({
         term: term === '' ? '(empty)' : term === ' ' ? '(space)' : term,
         resultCount: searchResults.length,
-        error: null
+        error: null,
       });
     } catch (error) {
       results.edgeCases.push({
         term: term === '' ? '(empty)' : term === ' ' ? '(space)' : term,
         resultCount: 0,
-        error: error.message
+        error: error.message,
       });
     }
   });
 
   return {
     results,
-    metrics: calculateQualityScore(results)
+    metrics: calculateQualityScore(results),
   };
 }
 
-describe('Search Quality Tests', function() {
+describe('Search Quality Tests', function () {
   this.timeout(15000);
 
-  it('should generate a high-quality search index', function(done) {
+  it('should generate a high-quality search index', function (done) {
     const ms = Metalsmith(join(fixtures, 'basic'))
       .source('src')
       .destination('build')
       .clean(true)
-      .use(search({
-        pattern: '**/*.html',
-        indexPath: 'search-index.json',
-        indexLevels: ['page', 'section'],
-        processSections: true,
-        processMarkdownFields: true,
-        stripHtml: true,
-        maxSectionLength: 2000,
-        minSectionLength: 50
-      }));
+      .use(
+        search({
+          pattern: '**/*.html',
+          indexPath: 'search-index.json',
+          indexLevels: ['page', 'section'],
+          processSections: true,
+          processMarkdownFields: true,
+          stripHtml: true,
+          maxSectionLength: 2000,
+          minSectionLength: 50,
+        })
+      );
 
-    ms.build(function(err, files) {
-      if (err) return done(err);
+    ms.build(function (err, files) {
+      if (err) {
+        return done(err);
+      }
 
       // Check that search index was created
       assert(files['search-index.json'], 'Search index should be created');
@@ -254,13 +261,8 @@ describe('Search Quality Tests', function() {
 
       // Run quality tests
       const qualityTest = testSearchQuality(searchIndex);
-      
-      // Display results
-      console.log('\n📊 Search Quality Metrics:');
-      console.log(`   Valid Terms Score: ${qualityTest.metrics.validTermsScore.toFixed(1)}%`);
-      console.log(`   Invalid Terms Score: ${qualityTest.metrics.invalidTermsScore.toFixed(1)}%`);
-      console.log(`   Edge Cases Score: ${qualityTest.metrics.edgeCasesScore.toFixed(1)}%`);
-      console.log(`   Overall Quality: ${qualityTest.metrics.overallScore}%`);
+
+      // Test results are included in assertions below
 
       // Quality assertions
       assert(
@@ -283,35 +285,36 @@ describe('Search Quality Tests', function() {
         `Overall quality should be at least 65% (got ${qualityTest.metrics.overallScore}%)`
       );
 
-      // Log some details for debugging
-      const failedValid = qualityTest.results.validTerms.filter(r => r.resultCount === 0);
-      if (failedValid.length > 0) {
-        console.log('\n⚠️  Valid terms with no results:', failedValid.map(r => r.term).join(', '));
-      }
+      // Store debug info for potential troubleshooting
+      const failedValid = qualityTest.results.validTerms.filter((r) => r.resultCount === 0);
+      const falsePositives = qualityTest.results.invalidTerms.filter((r) => r.resultCount > 0);
 
-      const falsePositives = qualityTest.results.invalidTerms.filter(r => r.resultCount > 0);
-      if (falsePositives.length > 0) {
-        console.log('⚠️  Invalid terms with results:', falsePositives.map(r => `${r.term}(${r.resultCount})`).join(', '));
-      }
+      // These variables are available for debugging but not logged to avoid console noise
+      void failedValid;
+      void falsePositives;
 
       done();
     });
   });
 
-  it('should handle component-based content effectively', function(done) {
+  it('should handle component-based content effectively', function (done) {
     const ms = Metalsmith(join(fixtures, 'basic'))
       .source('src')
       .destination('build')
       .clean(true)
-      .use(search({
-        pattern: '**/component-*.html',
-        indexPath: 'component-search.json',
-        indexLevels: ['page', 'section'],
-        processSections: true
-      }));
+      .use(
+        search({
+          pattern: '**/component-*.html',
+          indexPath: 'component-search.json',
+          indexLevels: ['page', 'section'],
+          processSections: true,
+        })
+      );
 
-    ms.build(function(err, files) {
-      if (err) return done(err);
+    ms.build(function (err, files) {
+      if (err) {
+        return done(err);
+      }
 
       const indexContent = files['component-search.json']?.contents?.toString();
       if (!indexContent) {
@@ -331,21 +334,25 @@ describe('Search Quality Tests', function() {
     });
   });
 
-  it('should handle traditional markdown content effectively', function(done) {
+  it('should handle traditional markdown content effectively', function (done) {
     const ms = Metalsmith(join(fixtures, 'basic'))
       .source('src')
       .destination('build')
       .clean(true)
-      .use(search({
-        pattern: '**/traditional-*.html',
-        indexPath: 'traditional-search.json',
-        indexLevels: ['page'],
-        chunkContent: true,
-        chunkSize: 1500
-      }));
+      .use(
+        search({
+          pattern: '**/traditional-*.html',
+          indexPath: 'traditional-search.json',
+          indexLevels: ['page'],
+          chunkContent: true,
+          chunkSize: 1500,
+        })
+      );
 
-    ms.build(function(err, files) {
-      if (err) return done(err);
+    ms.build(function (err, files) {
+      if (err) {
+        return done(err);
+      }
 
       const indexContent = files['traditional-search.json']?.contents?.toString();
       if (!indexContent) {
