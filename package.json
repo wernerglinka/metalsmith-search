@@ -1,6 +1,6 @@
 {
   "name": "metalsmith-search",
-  "version": "0.0.3",
+  "version": "0.1.0",
   "description": "Modern Metalsmith search plugin with Fuse.js and component-based indexing",
   "keywords": [
     "metalsmith",
