@@ -1,130 +1,48 @@
 /**
- * HTML stripping utilities for clean text extraction
- * Removes HTML markup while preserving readable content structure
+ * HTML stripping utilities using Cheerio
+ * Replaces expensive RegExp operations with fast, accurate Cheerio parsing
  */
+import * as cheerio from 'cheerio';
 
 /**
- * Validate HTML input
- * @param {*} html - HTML input to validate
- * @returns {boolean} True if valid HTML input
- */
-function isValidHtmlInput(html) {
-  return html && typeof html === 'string';
-}
-
-/**
- * Remove script and style tags completely
- * @param {string} html - HTML string
- * @returns {string} HTML without script/style tags
- */
-function removeScriptsAndStyles(html) {
-  return html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
-}
-
-/**
- * Convert common HTML elements to readable format
- * @param {string} html - HTML string
- * @param {boolean} preserveLineBreaks - Whether to preserve line breaks
- * @returns {string} HTML with converted elements
- */
-function convertElements(html, preserveLineBreaks) {
-  let result = html;
-
-  if (preserveLineBreaks) {
-    // Convert block elements to line breaks
-    result = result.replace(
-      /<\/(div|p|h[1-6]|li|tr|section|article|header|footer|main)[^>]*>/gi,
-      '\n'
-    );
-    result = result.replace(/<br\s*\/?>/gi, '\n');
-    result = result.replace(/<hr\s*\/?>/gi, '\n---\n');
-  }
-
-  return result;
-}
-
-/**
- * Strip all HTML tags
- * @param {string} html - HTML string
- * @returns {string} Text without HTML tags
- */
-function stripTags(html) {
-  return html.replace(/<[^>]+>/g, '');
-}
-
-/**
- * Decode HTML entities
- * @param {string} text - Text with HTML entities
- * @returns {string} Text with decoded entities
- */
-function decodeEntities(text) {
-  const entities = {
-    '&amp;': '&',
-    '&lt;': '<',
-    '&gt;': '>',
-    '&quot;': '"',
-    '&#39;': "'",
-    '&apos;': "'",
-    '&nbsp;': ' ',
-    '&mdash;': '—',
-    '&ndash;': '–',
-    '&hellip;': '…',
-    '&copy;': '©',
-    '&reg;': '®',
-    '&trade;': '™',
-  };
-
-  return text.replace(/&[a-zA-Z0-9#]+;/g, (match) => entities[match] || match);
-}
-
-/**
- * Clean up whitespace
- * @param {string} text - Text to clean
- * @param {boolean} cleanWhitespace - Whether to clean whitespace
- * @returns {string} Cleaned text
- */
-function cleanWhitespace(text, cleanWhitespace) {
-  if (!cleanWhitespace) {
-    return text;
-  }
-
-  return text
-    .replace(/\s+/g, ' ') // Collapse multiple spaces
-    .replace(/\n\s+/g, '\n') // Remove spaces at start of lines
-    .replace(/\s+\n/g, '\n') // Remove spaces at end of lines
-    .replace(/\n{3,}/g, '\n\n'); // Collapse multiple newlines
-}
-
-/**
- * Strip HTML tags and clean content for readability
- * @param {string} html - HTML string to process
+ * Strip HTML and return clean text using Cheerio
+ * This is much faster and more accurate than RegExp-based approaches
+ *
+ * @param {string} html - HTML content to process
  * @param {Object} options - Processing options
+ * @param {string[]} options.excludeSelectors - CSS selectors to remove (e.g., ['nav', 'footer'])
+ * @param {boolean} options.decodeEntities - Whether to decode HTML entities (default: true)
  * @returns {string} Clean text content
  */
 export function stripHtml(html, options = {}) {
-  if (!isValidHtmlInput(html)) {
+  if (!html || typeof html !== 'string') {
     return '';
   }
 
   const config = {
-    preserveLineBreaks: true,
-    cleanWhitespace: true,
+    excludeSelectors: [],
     decodeEntities: true,
     ...options,
   };
 
-  let text = html;
-  text = removeScriptsAndStyles(text);
-  text = convertElements(text, config.preserveLineBreaks);
-  text = stripTags(text);
+  try {
+    // Load HTML with Cheerio
+    const $ = cheerio.load(html, {
+      decodeEntities: config.decodeEntities,
+    });
 
-  if (config.decodeEntities) {
-    text = decodeEntities(text);
+    // Remove excluded elements
+    if (config.excludeSelectors && config.excludeSelectors.length > 0) {
+      $(config.excludeSelectors.join(', ')).remove();
+    }
+
+    // Always remove scripts and styles
+    $('script, style').remove();
+
+    // Extract clean text
+    return $.text().trim();
+  } catch {
+    // Fallback to empty string on parse error
+    return '';
   }
-
-  text = cleanWhitespace(text, config.cleanWhitespace);
-
-  return text.trim();
 }

@@ -25,45 +25,28 @@
  * - ignore will NEVER be null or undefined
  */
 export const defaultOptions = {
-  pattern: '**/*.md',
+  // HTML-first: Process final rendered HTML files
+  pattern: '**/*.html',
   ignore: ['**/search-index.json'],
-  async: false,
-  batchSize: 10,
 
   // Search-specific options
   indexPath: 'search-index.json',
-  indexLevels: ['page', 'section'],
-  sectionsField: 'sections',
-  stripHtml: true,
-  generateAnchors: true,
-  lazyLoad: true,
+
+  // Configurable content exclusion (optional chrome removal)
+  excludeSelectors: ['nav', 'header', 'footer'],
 
   // Fuse.js options
   fuseOptions: {
     keys: [
-      { name: 'pageName', weight: 10 }, // Page name for high-priority search
-      { name: 'title', weight: 8 }, // Section/entry title
-      { name: 'leadIn', weight: 5 }, // Optional frontmatter field
-      { name: 'prose', weight: 3 }, // Optional frontmatter field
-      { name: 'content', weight: 1 }, // Plugin-generated full content
-      { name: 'tags', weight: 6 }, // Content tags
+      { name: 'title', weight: 10 }, // Page title from <title> or <h1>
+      { name: 'content', weight: 5 }, // All page text content
+      { name: 'excerpt', weight: 3 }, // Auto-generated excerpt
     ],
     threshold: 0.3,
     includeScore: true,
     includeMatches: true,
     minMatchCharLength: 3, // Skip stop words (to, be, or, etc.)
   },
-
-  // Component-aware indexing (auto-detected)
-  sectionTypeField: 'sectionType',
-  autoDetectSectionTypes: true,
-
-  // Traditional content processing
-  maxSectionLength: 2000, // Split sections longer than this
-  chunkSize: 1500, // Target chunk size for long content
-  minSectionLength: 50, // Skip sections shorter than this
-  processMarkdownFields: true, // Process markdown in frontmatter
-  frontmatterFields: ['summary', 'intro', 'leadIn', 'subTitle', 'abstract', 'overview'], // Additional fields to index
 };
 
 /**
@@ -119,6 +102,7 @@ export function normalizeOptions(options) {
     ...options,
     pattern: normalizeToArray(options.pattern),
     ignore: normalizeToArray(options.ignore),
+    excludeSelectors: normalizeToArray(options.excludeSelectors),
   };
 }
 

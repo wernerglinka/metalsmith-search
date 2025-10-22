@@ -45,6 +45,7 @@ export default [
     files: ['test/**/*.js'],
     rules: {
       'no-unused-expressions': 'off', // For chai assertions
+      'no-console': 'off', // Allow console in tests for debugging
     },
   },
 ];

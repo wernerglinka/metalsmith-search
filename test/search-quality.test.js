@@ -155,8 +155,8 @@ function calculateQualityScore(results) {
  */
 function testSearchQuality(searchIndex, options = {}) {
   const searcher = new SimpleSearch(searchIndex.entries || searchIndex, {
-    keys: ['title', 'content', 'pageName', 'leadIn', 'prose'],
-    threshold: options.threshold || 0.6,
+    keys: ['title', 'content', 'excerpt'],
+    threshold: options.threshold || 0.3, // Match Fuse.js default threshold
     minMatchCharLength: 1,
   });
 
@@ -227,9 +227,9 @@ function testSearchQuality(searchIndex, options = {}) {
 }
 
 describe('Search Quality Tests', function () {
-  this.timeout(15000);
+  this.timeout(10000);
 
-  it('should generate a high-quality search index', function (done) {
+  it('should generate a high-quality search index from HTML content', function (done) {
     const ms = Metalsmith(join(fixtures, 'basic'))
       .source('src')
       .destination('build')
@@ -238,12 +238,7 @@ describe('Search Quality Tests', function () {
         search({
           pattern: '**/*.html',
           indexPath: 'search-index.json',
-          indexLevels: ['page', 'section'],
-          processSections: true,
-          processMarkdownFields: true,
-          stripHtml: true,
-          maxSectionLength: 2000,
-          minSectionLength: 50,
+          excludeSelectors: [], // Index all content for quality testing
         })
       );
 
@@ -259,10 +254,12 @@ describe('Search Quality Tests', function () {
       const indexContent = files['search-index.json'].contents.toString();
       const searchIndex = JSON.parse(indexContent);
 
-      // Run quality tests
-      const qualityTest = testSearchQuality(searchIndex);
+      // Verify we have entries
+      assert(searchIndex.entries, 'Search index should have entries array');
+      assert(searchIndex.entries.length > 0, 'Search index should have at least one entry');
 
-      // Test results are included in assertions below
+      // Run quality tests with stricter threshold
+      const qualityTest = testSearchQuality(searchIndex, { threshold: 0.3 });
 
       // Quality assertions
       assert(
@@ -285,88 +282,12 @@ describe('Search Quality Tests', function () {
         `Overall quality should be at least 65% (got ${qualityTest.metrics.overallScore}%)`
       );
 
-      // Store debug info for potential troubleshooting
-      const failedValid = qualityTest.results.validTerms.filter((r) => r.resultCount === 0);
-      const falsePositives = qualityTest.results.invalidTerms.filter((r) => r.resultCount > 0);
-
-      // These variables are available for debugging but not logged to avoid console noise
-      void failedValid;
-      void falsePositives;
-
-      done();
-    });
-  });
-
-  it('should handle component-based content effectively', function (done) {
-    const ms = Metalsmith(join(fixtures, 'basic'))
-      .source('src')
-      .destination('build')
-      .clean(true)
-      .use(
-        search({
-          pattern: '**/component-*.html',
-          indexPath: 'component-search.json',
-          indexLevels: ['page', 'section'],
-          processSections: true,
-        })
-      );
-
-    ms.build(function (err, files) {
-      if (err) {
-        return done(err);
-      }
-
-      const indexContent = files['component-search.json']?.contents?.toString();
-      if (!indexContent) {
-        // Skip if no component files
-        return done();
-      }
-
-      const searchIndex = JSON.parse(indexContent);
-      const qualityTest = testSearchQuality(searchIndex, { threshold: 0.5 });
-
-      assert(
-        qualityTest.metrics.overallScore >= 50,
-        `Component search quality should be at least 50% (got ${qualityTest.metrics.overallScore}%)`
-      );
-
-      done();
-    });
-  });
-
-  it('should handle traditional markdown content effectively', function (done) {
-    const ms = Metalsmith(join(fixtures, 'basic'))
-      .source('src')
-      .destination('build')
-      .clean(true)
-      .use(
-        search({
-          pattern: '**/traditional-*.html',
-          indexPath: 'traditional-search.json',
-          indexLevels: ['page'],
-          chunkContent: true,
-          chunkSize: 1500,
-        })
-      );
-
-    ms.build(function (err, files) {
-      if (err) {
-        return done(err);
-      }
-
-      const indexContent = files['traditional-search.json']?.contents?.toString();
-      if (!indexContent) {
-        // Skip if no traditional files
-        return done();
-      }
-
-      const searchIndex = JSON.parse(indexContent);
-      const qualityTest = testSearchQuality(searchIndex, { threshold: 0.5 });
-
-      assert(
-        qualityTest.metrics.overallScore >= 50,
-        `Traditional content search quality should be at least 50% (got ${qualityTest.metrics.overallScore}%)`
-      );
+      // Log summary for visibility
+      console.log(`\n📊 Search Quality Metrics:`);
+      console.log(`   Valid Terms Score: ${qualityTest.metrics.validTermsScore.toFixed(1)}%`);
+      console.log(`   Invalid Terms Score: ${qualityTest.metrics.invalidTermsScore.toFixed(1)}%`);
+      console.log(`   Edge Cases Score: ${qualityTest.metrics.edgeCasesScore.toFixed(1)}%`);
+      console.log(`   Overall Quality: ${qualityTest.metrics.overallScore}%\n`);
 
       done();
     });

@@ -27,8 +27,6 @@ export function createSearchIndex(searchEntries, options) {
     // Index configuration for client-side reconstruction
     config: {
       fuseOptions: options.fuseOptions,
-      indexLevels: options.indexLevels,
-      lazyLoad: options.lazyLoad,
     },
 
     // Statistics for debugging and optimization
@@ -37,11 +35,6 @@ export function createSearchIndex(searchEntries, options) {
     // The actual searchable data
     entries: optimizedEntries,
   };
-
-  // Generate additional index formats if needed
-  if (options.lazyLoad) {
-    index.lazyLoadUrl = options.indexPath.replace('.json', '-lazy.json');
-  }
 
   return index;
 }
@@ -69,16 +62,13 @@ function optimizeEntriesForSearch(entries) {
       // Additional metadata for enhanced search
       ...(entry.description && { description: cleanText(entry.description) }),
       ...(entry.excerpt && { excerpt: cleanText(entry.excerpt) }),
-      ...(entry.leadIn && { leadIn: cleanText(entry.leadIn) }),
-      ...(entry.prose && { prose: cleanText(entry.prose) }),
-      ...(entry.pageName && { pageName: cleanText(entry.pageName) }),
       ...(entry.tags && { tags: entry.tags }),
       ...(entry.date && { date: entry.date }),
       ...(entry.author && { author: entry.author }),
 
-      // Section-specific metadata
-      ...(entry.sectionType && { sectionType: entry.sectionType }),
-      ...(entry.sectionIndex !== undefined && { sectionIndex: entry.sectionIndex }),
+      // Headings array for client-side scroll-to functionality
+      // Format: [{level: 'h2', id: 'section-id', title: 'Section Title'}, ...]
+      ...(entry.headings && entry.headings.length > 0 && { headings: entry.headings }),
 
       // Search relevance (initially 0, will be set by Fuse.js)
       score: 0,
@@ -98,7 +88,6 @@ function generateIndexStats(entries) {
   const stats = {
     totalEntries: entries.length,
     entriesByType: {},
-    entriesBySectionType: {},
     averageContentLength: 0,
     totalContentLength: 0,
   };
@@ -108,12 +97,6 @@ function generateIndexStats(entries) {
   for (const entry of entries) {
     // Count by entry type
     stats.entriesByType[entry.type] = (stats.entriesByType[entry.type] || 0) + 1;
-
-    // Count by section type
-    if (entry.sectionType) {
-      stats.entriesBySectionType[entry.sectionType] =
-        (stats.entriesBySectionType[entry.sectionType] || 0) + 1;
-    }
 
     // Calculate content length
     const contentLength = (entry.content || '').length;
@@ -139,13 +122,10 @@ function createEmptyIndex(options) {
     totalEntries: 0,
     config: {
       fuseOptions: options.fuseOptions,
-      indexLevels: options.indexLevels,
-      lazyLoad: options.lazyLoad,
     },
     stats: {
       totalEntries: 0,
       entriesByType: {},
-      entriesBySectionType: {},
       averageContentLength: 0,
       totalContentLength: 0,
     },

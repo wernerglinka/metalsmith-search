@@ -56,7 +56,6 @@ describe('metalsmith-search (CommonJS)', function() {
   it('should handle component-based indexing', function(done) {
     metalsmith
       .use(search({
-        indexLevels: ['page', 'section']
       }))
       .build(function(err, files) {
         if (err) {return done(err);}
