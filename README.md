@@ -299,6 +299,6 @@ MIT © [Werner Glinka](https://github.com/wernerglinka)
 [npm-url]: https://www.npmjs.com/package/metalsmith-search
 [license-badge]: https://img.shields.io/github/license/wernerglinka/metalsmith-search
 [license-url]: LICENSE
-[coverage-badge]: https://img.shields.io/badge/test%20coverage-94%25-brightgreen
+[coverage-badge]: https://img.shields.io/badge/test%20coverage-97%25-brightgreen
 [coverage-url]: #testing-and-coverage
 [modules-badge]: https://img.shields.io/badge/modules-ESM%2FCJS-blue
