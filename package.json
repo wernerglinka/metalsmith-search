@@ -1,7 +1,7 @@
 {
   "name": "metalsmith-search",
-  "version": "0.1.0",
-  "description": "Modern Metalsmith search plugin with Fuse.js and component-based indexing",
+  "version": "0.2.0",
+  "description": "HTML-first Metalsmith search plugin with Fuse.js and Cheerio",
   "keywords": [
     "metalsmith",
     "metalsmith-plugin",
@@ -48,7 +48,7 @@
     "release:minor": "./scripts/release.sh minor --ci",
     "release:major": "./scripts/release.sh major --ci",
     "release:check": "npm run lint:check && npm run build && release-it --dry-run",
-    "test": "c8 --include=src/**/*.js mocha 'test/index.test.js' 'test/cjs.test.cjs' 'test/comprehensive.test.js' 'test/utilities.test.js' 'test/search-quality.test.js' -t 15000",
+    "test": "c8 --include=src/**/*.js mocha 'test/index.test.js' 'test/cjs.test.cjs' 'test/comprehensive.test.js' 'test/utilities.test.js' 'test/real-world.test.js' 'test/edge-cases.test.js' 'test/unit-coverage.test.js' 'test/search-quality.test.js' -t 15000",
     "test:coverage": "c8 npm test",
     "test:esm": "c8 --include=src/**/*.js mocha test/index.test.js -t 15000",
     "test:cjs": "c8 --include=src/**/*.js mocha test/cjs.test.cjs -t 15000",
@@ -58,6 +58,7 @@
     "timeout": 10000
   },
   "dependencies": {
+    "cheerio": "^1.1.2",
     "fuse.js": "^7.0.0"
   },
   "devDependencies": {

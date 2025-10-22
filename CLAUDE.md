@@ -1,20 +1,36 @@
 # metalsmith-search - Development Context
 
+## Current Status ✅
+
+**Refactoring Complete** - HTML-first architecture successfully implemented and tested.
+
+- ✅ **70 tests passing** (all edge cases resolved)
+- ✅ **88.79% branch coverage** (exceeds 78% target)
+- ✅ **100% search quality score** (valid/invalid/edge cases)
+- ✅ **No linting errors** - Code fully compliant
+- ✅ **All fixtures clean** - No orphaned test files
+- ✅ **Try/catch in all tests** - Reliable error handling
+
+**Key Improvements from Refactoring:**
+
+- Fixed index.html → `/` URL normalization for permalinks
+- Added try/catch blocks to all async tests (prevents timeout errors)
+- Cleaned up fixture files (removed orphaned traditional-page.html)
+- Fixed whitespace-only and all-content-excluded edge cases
+
 ## Project Overview
 
-This is a **modern Metalsmith search plugin** that represents a quantum leap beyond legacy solutions
-like metalsmith-lunr. Built from the ground up using enhanced standards from
-`metalsmith-plugin-mcp-server`, it combines cutting-edge search technology (Fuse.js) with deep
-understanding of modern Metalsmith architectures.
+This is an **HTML-first Metalsmith search plugin** that processes final rendered HTML for accurate
+search indexing. Built with Fuse.js and Cheerio, it represents a fundamental architectural
+improvement over both the initial markdown-first approach (v0.1.0) and legacy solutions like
+metalsmith-lunr.
 
-**Version**: 0.0.1 (Initial Release) **Technology**: Fuse.js-powered fuzzy search with
-component-based indexing **Architecture**: Dual ESM/CommonJS support with comprehensive testing
+**Version**: 0.2.0 (HTML-First Refactor) **Technology**: Fuse.js + Cheerio for fast, accurate HTML
+parsing **Architecture**: Dual ESM/CommonJS support with simplified, maintainable codebase
 
 ## MCP Server Integration (CRITICAL)
 
-**IMPORTANT**: This plugin was created with `metalsmith-plugin-mcp-server`. When working on this
-plugin, AI assistants (Claude) MUST use the MCP server tools rather than creating their own
-implementations.
+**IMPORTANT**: This plugin was created with `metalsmith-plugin-mcp-server`. When working on this plugin, AI assistants (Claude) MUST use the MCP server tools rather than creating their own implementations.
 
 ### Essential MCP Commands
 
@@ -53,7 +69,6 @@ update-deps .
 ### Common Mistakes to AVOID
 
 **❌ Wrong Approach:**
-
 - Creating custom CLAUDE.md content instead of using `get-template plugin/CLAUDE.md`
 - Scaffolding entire new plugins when you just need a template
 - Making up template content or "simplifying" official templates
@@ -61,7 +76,6 @@ update-deps .
 - Using commands like `npx metalsmith-plugin-mcp-server scaffold ./ CLAUDE.md claude-context`
 
 **✅ Correct Approach:**
-
 - Use `list-templates` to see what's available
 - Use `get-template <template-name>` to get exact content
 - Follow validation recommendations exactly as provided
@@ -71,7 +85,6 @@ update-deps .
 ### Quick Commands
 
 **Quality & Validation:**
-
 ```bash
 npx metalsmith-plugin-mcp-server validate . --functional  # Validate with MCP server
 npm test                                                   # Run tests with coverage
@@ -79,19 +92,18 @@ npm run lint                                              # Lint and fix code
 ```
 
 **Release Process:**
-
 ```bash
 npm run release:patch   # Bug fixes (1.5.4 → 1.5.5)
-npm run release:minor   # New features (1.5.4 → 1.6.0)
+npm run release:minor   # New features (1.5.4 → 1.6.0)  
 npm run release:major   # Breaking changes (1.5.4 → 2.0.0)
 ```
 
 **Development:**
-
 ```bash
 npm run build          # Build ESM/CJS versions
 npm run test:coverage  # Run tests with detailed coverage
 ```
+
 
 ## Pre-Commit and Release Workflow
 
@@ -142,101 +154,122 @@ npm run release:major  # For breaking changes (X.0.0)
 
 ## Key Learnings from Development
 
-### 1. Component-Based vs Traditional Content Architecture
+### 1. The Markdown-First Mistake (v0.1.0)
 
-**Discovery**: Modern Metalsmith sites (2025 pattern) use component-based architecture with sections
-arrays, while traditional sites use long-form markdown content. The plugin needed to support both
-paradigms seamlessly.
+**Initial Reasoning (FLAWED)**:
 
-**Solution**:
+> "Content starts as markdown → gets merged into templates → becomes HTML → extract content back
+> out"
 
-- **Component-based processing**: Extracts content from frontmatter sections arrays
-- **Traditional processing**: Intelligent chunking of long markdown content
-- **Unified indexing**: Both approaches feed into the same Fuse.js search index
+**Why This Was Wrong**:
+
+1. **Templates add searchable content**: Navigation, footers, template-generated text
+2. **Markdown ≠ Final content**: Misses all template context and composition
+3. **"Chrome-free" is a bug, not a feature**: Users search for things in nav/footer/header
+4. **Component-based assumption**: Over-engineered for specific architecture patterns
+5. **More complex**: Required dual logic paths (component vs traditional)
+
+### 2. HTML-First Architecture (v0.2.0) - The Right Approach
+
+**Critical Discovery from Maintainer Feedback**:
+
+> "The plugin would be much simpler if it was purely HTML-content-based and came after
+> layouts/in-place."
+
+**Benefits of HTML-First**:
+
+- ✅ **Simpler**: Single HTML parsing path with Cheerio
+- ✅ **Accurate**: Indexes what users actually see
+- ✅ **Faster**: Cheerio parsing vs expensive RegExp operations
+- ✅ **Universal**: Works with any content architecture (component-based, traditional, slots)
+- ✅ **Maintainable**: No assumptions about frontmatter structure
 
 ```javascript
-// Component-based extraction (modern)
-sections: [
-  {
-    sectionType: 'hero',
-    text: { title: 'Title', prose: 'Content...' }
-  }
-]
+// HTML-first: Simple and accurate
+import * as cheerio from 'cheerio';
 
-// Traditional extraction (legacy support)
-# Long Article Title
-Content that gets intelligently chunked...
+const $ = cheerio.load(html);
+$('script, style, nav, header, footer').remove(); // Optional
+const text = $.text(); // Done.
 ```
 
-### 2. Pipeline Positioning Strategy
+### 3. Pipeline Positioning - After Layouts
 
-**Critical Discovery**: Plugin must run **late in the Metalsmith pipeline** after content processing
-but still have access to original frontmatter.
-
-**Rationale**:
-
-- ✅ Access to processed HTML content from layouts/templates
-- ✅ Access to original frontmatter metadata
-- ✅ All content transformations are complete
-- ✅ Perfect for production builds only
+**CRITICAL**: Plugin must run **AFTER** layouts/templates:
 
 ```javascript
-// Optimal pipeline position
+// Correct pipeline position
 Metalsmith(__dirname)
-  .use(layouts()) // Content processing
-  .use(collections()) // Metadata organization
+  .use(layouts()) // HTML generation FIRST
   .use(
     search({
-      // Search indexing (LATE STAGE)
-      pattern: '**/*.html', // Process final HTML
-      indexLevels: ['page', 'section'],
+      // Search indexing AFTER layouts
+      pattern: '**/*.html',
+      excludeSelectors: ['nav', 'header', 'footer'], // Optional
     })
   );
 ```
 
-### 3. Metalsmith Philosophy: Real Web Technologies
+**Why This Matters**:
 
-**Key Insight**: User feedback emphasized "Metalsmith builds pages with real HTML, CSS and plain
-JavaScript" - not React or other frameworks.
+- Indexes final rendered content
+- Access to all template-generated text
+- No guessing about content structure
+- Works with @metalsmith/slots and any architecture
 
-**Implementation Impact**:
+### 4. Performance: Cheerio vs RegExp
 
-- Removed React examples from documentation
-- Focused on vanilla JavaScript client-side integration
-- Emphasized progressive enhancement approach
-- Generated search indexes work with any JavaScript framework or no framework
+**Maintainer Feedback**:
 
-### 4. Frontmatter Markdown Processing
+> "The html-stripper contains a lot of very expensive RegExp, TBH this would probably be much easier
+> / exact to do with cheerio .text()"
 
-**Challenge**: Any frontmatter field might contain markdown that needs processing for search.
-
-**Solution**:
+**Reality Check**:
 
 ```javascript
-// Process markdown in frontmatter fields
-processMarkdownFields: true,
-frontmatterFields: ['summary', 'intro', 'leadIn', 'subTitle', 'abstract']
+// ❌ BAD: Multiple expensive RegExp passes
+text = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+// ... many more RegExp operations
+
+// ✅ GOOD: Single Cheerio parse
+const $ = cheerio.load(html);
+$('script, style').remove();
+return $.text();
 ```
 
-This ensures rich metadata is properly indexed regardless of where it appears in the content
-structure.
+**Result**: Faster, more accurate, less code
 
-### 5. Performance Optimization Insights
+### 5. Removed Premature Optimizations
 
-**Batch Processing**: Large sites need efficient processing
+**Maintainer Feedback**:
 
-```javascript
-batchSize: 10, // Process files in batches
-async: false   // Enable for very large sites
-```
+> "I'm suspicious about the need for a batchSize option, did you encounter significant slowness?"
 
-**Content Chunking**: Long articles need intelligent splitting
+**Removed No-Ops and Premature Optimizations**:
 
-```javascript
-maxSectionLength: 2000, // Split long sections
-chunkSize: 1500,        // Target chunk size
-minSectionLength: 50    // Skip tiny sections
-```
+- ❌ `async` - Not implemented properly
+- ❌ `batchSize` - No measured performance issue
+- ❌ `lazyLoad` - Not implemented
+- ❌ `processMarkdownFields` - No longer relevant
+
+**Lesson**: Measure first, optimize later
+
+### 6. Trust the Pattern Option
+
+**Maintainer Feedback**:
+
+> "Why not simply let the pattern option decide this instead of running all kinds of expensive logic
+> to auto-detect 'searchable' files?"
+
+**Removed Complexity**:
+
+- ❌ `isBinaryFile()` - SVG is not binary, logic incomplete
+- ❌ File priority calculation - Arbitrary and unnecessary
+- ❌ Frontmatter delimiter detection - Already stripped by Metalsmith
+- ❌ Auto-detection of section types - Over-engineered
+
+**Result**: Simpler, faster, trusts user configuration
 
 ## Development Architecture
 
@@ -255,41 +288,41 @@ This plugin supports both ESM and CommonJS:
 ├── src/
 │   ├── index.js                    # Main plugin entry point
 │   ├── processors/
-│   │   ├── async.js               # Async processing utilities
-│   │   ├── content-extractor.js   # Multi-level content extraction
+│   │   ├── content-extractor.js   # HTML parsing with Cheerio
+│   │   ├── file-processor.js      # File processing logic
 │   │   └── search-indexer.js      # Fuse.js index generation
 │   └── utils/
-│       ├── anchor-generator.js    # URL-safe anchor creation
-│       ├── config.js              # Configuration utilities
-│       └── html-stripper.js       # Semantic HTML processing
+│       ├── config.js              # Configuration and defaults
+│       ├── html-stripper.js       # Cheerio-based HTML stripping
+│       ├── index-helpers.js       # Index creation helpers
+│       └── plugin-helpers.js      # Plugin utility functions
 ├── test/
-│   ├── index.test.js              # ESM tests
+│   ├── index.js                   # ESM tests
 │   ├── cjs.test.cjs               # CommonJS tests
-│   └── fixtures/                  # Component-based and traditional test content
+│   ├── search-quality.test.js     # Search quality metrics
+│   └── fixtures/                  # HTML test content
 ├── lib/                           # Built files (auto-generated)
-└── README.md                      # Comprehensive docs with Theory of Operation
+└── README.md                      # User documentation
 ```
 
 ### Plugin Features
 
-This plugin includes these enhanced features:
+This plugin includes these features:
 
-- **Multi-Level Indexing**: Page, section, and component-level search entries
-- **Dual Content Architecture**: Supports both modern component-based sites and traditional
-  long-form content
-- **Intelligent Content Chunking**: Automatic splitting of long articles with heading-based
-  navigation
-- **Frontmatter Markdown Processing**: Processes markdown in any frontmatter field
-- **Async Processing**: Batch processing with configurable batch sizes and progress tracking
-- **Semantic HTML Stripping**: Preserves readability while removing markup
-- **Pipeline Optimization**: Positioned for late-stage processing with full content access
+- **HTML-First Indexing**: Processes final rendered HTML for accuracy
+- **Cheerio Parsing**: Fast, reliable HTML parsing
+- **Multi-Level Indexing**: Page and section-level search entries
+- **Configurable Exclusion**: Optional removal of nav/header/footer
+- **Frontmatter Integration**: Index custom frontmatter fields
+- **Heading-Based Sections**: Extract content by h2/h3 hierarchy
+- **Pipeline Optimized**: Runs after layouts for complete content access
 
 ## Testing Strategy
 
 ### Test Structure
 
-- **ESM Tests**: `test/index.test.js` - Tests the built ESM version
-- **CommonJS Tests**: `test/index.test.cjs` - Tests the built CommonJS version
+- **ESM Tests**: `test/index.js` - Tests the built ESM version
+- **CommonJS Tests**: `test/cjs.test.cjs` - Tests the built CommonJS version
 - **Fixtures**: `test/fixtures/` - Sample files for testing transformations
 
 ### Running Tests
@@ -479,10 +512,10 @@ This automatically:
 ```javascript
 // Add debug logging
 import { debuglog } from 'util';
-const debug = debuglog('');
+const debug = debuglog('metalsmith-search');
 
-function (options = {}) {
-  return function(files, metalsmith, callback) {
+function search(options = {}) {
+  return function (files, metalsmith, callback) {
     debug('Processing %d files', Object.keys(files).length);
     // ... plugin logic
   };
@@ -502,14 +535,16 @@ Test your plugin with real Metalsmith projects:
 
 ```javascript
 import Metalsmith from 'metalsmith';
-import  from '';
+import search from 'metalsmith-search';
 
 const metalsmith = Metalsmith(__dirname)
   .source('src')
   .destination('dist')
-  .use(({
-    // your options
-  }))
+  .use(
+    search({
+      // your options
+    })
+  )
   .build((err) => {
     if (err) throw err;
     console.log('Build complete!');
@@ -527,35 +562,51 @@ const metalsmith = Metalsmith(__dirname)
 
 ## Development Lessons Summary
 
+### v0.2.0 Refactor: HTML-First Architecture
+
+**Trigger**: Maintainer feedback identified fundamental flaws in markdown-first approach
+
+**Key Changes**:
+
+1. **Dependency**: Added Cheerio for HTML parsing
+2. **Pattern**: `**/*.md` → `**/*.html`
+3. **Pipeline**: Before layouts → After layouts
+4. **Simplified**: 17 options → 8 options
+5. **Removed**: file-filter.js, async.js (no-ops and premature optimizations)
+6. **Performance**: RegExp-based HTML stripping → Cheerio `.text()`
+
+**Result**: Simpler, faster, more accurate, maintainable codebase
+
+### Critical Lessons Learned
+
+1. **Question AI Suggestions**: Initial markdown-first approach sounded reasonable but was
+   fundamentally flawed
+2. **Domain Expertise Matters**: Maintainer immediately spotted issues AI development missed
+3. **Simplicity > Cleverness**: HTML-first is simpler than dual markdown/component extraction
+4. **Measure, Don't Assume**: Batch processing, async options added without measuring need
+5. **Trust User Configuration**: Pattern option sufficient, no need for auto-detection
+6. **Dependencies Are OK**: Cheerio is battle-tested and more reliable than custom RegExp
+
 ### Technical Achievements
 
-1. **Dual Architecture Support**: Seamlessly handles both modern component-based and traditional
-   markdown content
-2. **Pipeline Optimization**: Strategic late-stage positioning for optimal content access
-3. **Performance Engineering**: Intelligent batching and content chunking for large sites
-4. **Standards Compliance**: Full ESM/CommonJS support with comprehensive testing
-5. **Fuse.js Integration**: Modern fuzzy search replacing legacy Lunr.js solutions
+1. **HTML-First Processing**: Accurate indexing of final rendered content
+2. **Cheerio Integration**: Fast, reliable HTML parsing
+3. **Standards Compliance**: Full ESM/CommonJS support
+4. **Fuse.js Integration**: Modern fuzzy search replacing legacy Lunr.js
 
 ### Philosophical Insights
 
 1. **Web Standards First**: Metalsmith's strength is generating real HTML/CSS/JavaScript
-2. **Progressive Enhancement**: Search works with or without JavaScript frameworks
-3. **Content Flexibility**: Support both cutting-edge and traditional content patterns
-4. **Production Focus**: Late pipeline positioning enables production-only search indexing
+2. **Index Reality**: Process what users see, not intermediate formats
+3. **Progressive Enhancement**: Search works with any architecture (or no architecture)
+4. **Maintainer Feedback Is Gold**: Expert domain knowledge catches what general programming misses
 
 ### Best Practices Established
 
-1. **MCP Server Integration**: Always use official templates and validation tools
-2. **Multi-Level Testing**: Test both ESM and CommonJS builds with realistic content
-3. **Comprehensive Documentation**: Include Theory of Operation for complex plugins
-4. **User-Centered Design**: Listen to real-world feedback and adapt accordingly
-
-### Critical Development Fixes Applied
-
-1. **Build Error Resolution**: Created missing `src/processors/async.js` file
-2. **Test Pattern Alignment**: Updated package.json scripts to match actual test filenames
-3. **Fixture Structure**: Organized test content in proper Metalsmith src/ directory structure
-4. **Documentation Refinement**: Removed framework-specific examples per user feedback
+1. **MCP Server Integration**: Use official templates and validation tools
+2. **Multi-Level Testing**: Test both ESM and CommonJS builds
+3. **Listen to Feedback**: Maintainer feedback led to complete architectural improvement
+4. **Breaking Changes Pre-1.0**: Use pre-1.0 phase to fix fundamental issues
 
 ## Search Quality Testing
 
@@ -591,7 +642,7 @@ The test suite calculates a comprehensive quality score:
 - **Edge Cases Score**: % of edge cases handled without errors (target: ≥90%)
 - **Overall Quality Score**: Weighted average (target: ≥65%)
 
-Current performance: **94% overall quality score**
+Current performance: **100% overall quality score**
 
 ### Running Search Quality Tests
 

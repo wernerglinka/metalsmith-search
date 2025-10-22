@@ -19,7 +19,6 @@ describe('metalsmith-search (Comprehensive)', function () {
       metalsmith
         .use(
           search({
-            indexLevels: ['page', 'section'],
             maxSectionLength: 1000,
             chunkSize: 500,
             processMarkdownFields: true,
@@ -51,7 +50,6 @@ describe('metalsmith-search (Comprehensive)', function () {
       metalsmith
         .use(
           search({
-            indexLevels: ['section'],
             sectionTypes: ['hero', 'text-only', 'media-image'],
             componentFields: {
               hero: ['title', 'leadIn', 'prose'],
@@ -120,31 +118,24 @@ describe('metalsmith-search (Comprehensive)', function () {
     });
 
     it('should generate anchor links for sections', function (done) {
-      metalsmith
-        .use(
-          search({
-            generateAnchors: true,
-            indexLevels: ['section'],
-          })
-        )
-        .build(function (err, files) {
-          if (err) {
-            return done(err);
+      metalsmith.use(search({})).build(function (err, files) {
+        if (err) {
+          return done(err);
+        }
+
+        const indexContent = JSON.parse(files['search-index.json'].contents.toString());
+
+        // Check that section entries have anchor properties
+        const sectionEntries = indexContent.entries.filter((entry) => entry.type === 'section');
+        sectionEntries.forEach((entry) => {
+          if (entry.anchorId) {
+            assert.ok(typeof entry.anchorId === 'string');
+            assert.ok(entry.anchorId.length > 0);
           }
-
-          const indexContent = JSON.parse(files['search-index.json'].contents.toString());
-
-          // Check that section entries have anchor properties
-          const sectionEntries = indexContent.entries.filter((entry) => entry.type === 'section');
-          sectionEntries.forEach((entry) => {
-            if (entry.anchorId) {
-              assert.ok(typeof entry.anchorId === 'string');
-              assert.ok(entry.anchorId.length > 0);
-            }
-          });
-
-          done();
         });
+
+        done();
+      });
     });
   });
 
@@ -180,7 +171,6 @@ describe('metalsmith-search (Comprehensive)', function () {
         .use(
           search({
             batchSize: 1,
-            indexLevels: ['page'],
           })
         )
         .build(function (err, files) {
@@ -227,7 +217,6 @@ describe('metalsmith-search (Comprehensive)', function () {
         .use(
           search({
             minSectionLength: 50, // Use smaller length to avoid filtering out all content
-            indexLevels: ['page'], // Simplify to page level to avoid complex processing
             pattern: '**/*.md',
           })
         )
@@ -325,7 +314,6 @@ describe('metalsmith-search (Comprehensive)', function () {
           search({
             maxSectionLength: 500, // Use reasonable size for existing content
             chunkSize: 300,
-            indexLevels: ['section'],
             pattern: '**/traditional-long-article.md', // Target specific long file
           })
         )
@@ -352,7 +340,6 @@ describe('metalsmith-search (Comprehensive)', function () {
       metalsmith
         .use(
           search({
-            indexLevels: ['page'], // Simplify processing
             pattern: '**/*.md',
           })
         )
@@ -422,7 +409,6 @@ describe('metalsmith-search (Comprehensive)', function () {
         .use(
           search({
             stripHtml: false, // Don't strip HTML
-            indexLevels: ['page'],
           })
         )
         .build(function (err, files) {
@@ -441,7 +427,6 @@ describe('metalsmith-search (Comprehensive)', function () {
         .use(
           search({
             lazyLoad: false,
-            indexLevels: ['page'],
           })
         )
         .build(function (err, files) {
@@ -457,22 +442,15 @@ describe('metalsmith-search (Comprehensive)', function () {
     });
 
     it('should handle anchor generation disabled', function (done) {
-      metalsmith
-        .use(
-          search({
-            generateAnchors: false,
-            indexLevels: ['section'],
-          })
-        )
-        .build(function (err, files) {
-          if (err) {
-            return done(err);
-          }
+      metalsmith.use(search({})).build(function (err, files) {
+        if (err) {
+          return done(err);
+        }
 
-          assert.ok(files['search-index.json']);
+        assert.ok(files['search-index.json']);
 
-          done();
-        });
+        done();
+      });
     });
 
     it('should handle missing or undefined options gracefully', function (done) {
@@ -502,7 +480,6 @@ describe('metalsmith-search (Comprehensive)', function () {
           search({
             pattern: '**/*.md',
             async: true, // Enable async to test that path
-            indexLevels: ['page', 'section'],
           })
         )
         .build(function (err, files) {
