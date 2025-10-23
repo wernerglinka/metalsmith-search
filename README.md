@@ -5,7 +5,10 @@
 [![ESM/CommonJS][modules-badge]][npm-url]
 [![Known Vulnerabilities](https://snyk.io/test/npm/metalsmith-search/badge.svg)](https://snyk.io/test/npm/metalsmith-search)
 
-An HTML-first Metalsmith search plugin with Fuse.js and Cheerio for accurate content indexing
+An HTML-first Metalsmith search plugin with Fuse.js and Cheerio for accurate content indexing. For a
+live example of Metasmith Search see the
+[Metalsmith Component Library](https://ms-components-library.netlify.app/references/sections/search/)
+website.
 
 > **Version 0.2.0** introduces breaking changes with HTML-first architecture. See migration guide
 > below.
@@ -89,24 +92,6 @@ The plugin processes HTML files **after** layouts/templates for accurate search 
    - Headings array for scroll-to functionality
 6. **Anchor Generation**: Automatically generates IDs for headings without them
 
-### Plugin Position
-
-**IMPORTANT**: Place the search plugin **AFTER** layouts/templates:
-
-```js
-metalsmith
-  .use(layouts()) // HTML generation FIRST
-  .use(search()) // Process final HTML AFTER layouts
-  .build();
-```
-
-**Benefits**:
-
-- Indexes what users actually see
-- Works with any content architecture
-- No assumptions about frontmatter structure
-- Faster and more accurate than RegExp-based approaches
-
 ## Options
 
 | Option             | Type                 | Default                                          | Description                             |
@@ -186,16 +171,10 @@ sites, and advanced features, see **[GETTING-STARTED.md](./GETTING-STARTED.md)**
 
 ## Debug
 
-To enable debug logs, set the DEBUG environment variable to `metalsmith-search*`:
+To enable debug logs, set the `DEBUG` environment variable to `metalsmith-search*`:
 
 ```javascript
 metalsmith.env('DEBUG', 'metalsmith-search*');
-```
-
-Or via command line:
-
-```bash
-DEBUG=metalsmith-search* npm run build
 ```
 
 ## Migration from v0.1.x
