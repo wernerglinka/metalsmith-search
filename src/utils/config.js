@@ -1,38 +1,23 @@
 /**
- * Configuration Utilities for Metalsmith Plugins
- *
- * This file provides utilities for handling plugin configuration:
- * - Deep merging of configuration objects
- * - File pattern matching using Metalsmith's native methods
- * - Option validation and normalization
- *
- * Philosophy: Use Metalsmith's built-in capabilities and local utility functions
- * instead of external dependencies to keep plugins lightweight.
+ * Configuration utilities for plugin options:
+ * deep merging, file pattern matching, and normalization.
+ * Uses Metalsmith's native match() method to avoid external dependencies.
  */
-
-// No external imports needed - we use Metalsmith's built-in match() method for file patterns
 
 /**
  * Default plugin options
+ * All properties guaranteed to exist after merging with user options.
  * @type {Object}
- * @property {string} pattern - Files to process (always exists after merge)
- * @property {string[]} ignore - Files to ignore (always exists after merge)
- *
- * IMPORTANT: After deepMerge(defaults, userOptions), all default properties
- * are guaranteed to exist. User options can override values but cannot remove
- * properties. This means:
- * - pattern will NEVER be null or undefined
- * - ignore will NEVER be null or undefined
+ * @property {string} pattern - Files to process (HTML files)
+ * @property {string[]} ignore - Files to exclude from processing
+ * @property {string} indexPath - Output path for search index
+ * @property {string[]} excludeSelectors - CSS selectors to exclude from content
+ * @property {Object} fuseOptions - Fuse.js search configuration
  */
 export const defaultOptions = {
-  // HTML-first: Process final rendered HTML files
   pattern: '**/*.html',
   ignore: ['**/search-index.json'],
-
-  // Search-specific options
   indexPath: 'search-index.json',
-
-  // Configurable content exclusion (optional chrome removal)
   excludeSelectors: ['nav', 'header', 'footer'],
 
   // Fuse.js options
@@ -50,16 +35,11 @@ export const defaultOptions = {
 };
 
 /**
- * Deep merge configuration objects
- *
- * Modern functional approach using reduce() and object spread.
- * This implementation:
- * - Creates new objects instead of mutating existing ones
- * - Handles nested objects recursively
- * - Uses constructor check for reliable object detection
- * - Utilizes optional chaining for safe property access
- *
- * Based on the proven implementation from metalsmith-optimize-images.
+ * Deep merge configuration objects without mutation
+ * Recursively merges nested objects using reduce() and spread operators.
+ * @param {Object} target - Base configuration object
+ * @param {Object} source - Override configuration object
+ * @returns {Object} Merged configuration
  */
 const deepMerge = (target, source) =>
   Object.keys(source).reduce(
@@ -93,9 +73,9 @@ function normalizeToArray(value) {
 }
 
 /**
- * Normalize plugin options
- * @param {Object} options - Raw options (already merged with defaults)
- * @returns {Object} Normalized options
+ * Normalize options by converting string values to arrays
+ * @param {Object} options - Merged options (defaults + user overrides)
+ * @returns {Object} Options with arrays for pattern, ignore, and excludeSelectors
  */
 export function normalizeOptions(options) {
   return {
@@ -107,38 +87,31 @@ export function normalizeOptions(options) {
 }
 
 /**
- * Check if files should be ignored
- * @param {string[]} ignore - Ignore patterns
- * @returns {boolean} True if there are patterns to ignore
+ * Check if ignore patterns exist
+ * @param {string[]} ignore - Array of ignore patterns
+ * @returns {boolean} True if ignore patterns are present
  */
 function hasIgnorePatterns(ignore) {
   return ignore.length > 0;
 }
 
 /**
- * Filter out ignored files from matched files
- * @param {string[]} matchedFiles - Files that match include patterns
- * @param {string[]} ignoredFiles - Files that match ignore patterns
- * @returns {string[]} Filtered file list
+ * Remove ignored files from matched files
+ * @param {string[]} matchedFiles - Files matching pattern
+ * @param {string[]} ignoredFiles - Files matching ignore patterns
+ * @returns {string[]} Files to process (matched minus ignored)
  */
 function filterIgnoredFiles(matchedFiles, ignoredFiles) {
   return matchedFiles.filter((filename) => !ignoredFiles.includes(filename));
 }
 
 /**
- * Get files that match patterns and are not ignored
- *
- * Uses Metalsmith's built-in match() method instead of external glob libraries.
- * This approach:
- * - Leverages Metalsmith's native file matching capabilities
- * - Eliminates external dependencies
- * - Ensures consistent behavior with other Metalsmith plugins
- * - Supports all glob patterns that Metalsmith supports
- *
- * @param {Object} files - Metalsmith files object (all files in the build)
+ * Get files matching pattern while excluding ignored files
+ * Uses Metalsmith's native match() method for consistency with other plugins.
+ * @param {Object} files - Metalsmith files object
  * @param {Object} options - Normalized options with pattern and ignore arrays
- * @param {Object} metalsmith - Metalsmith instance (needed for match method)
- * @returns {string[]} Array of file paths to process
+ * @param {Object} metalsmith - Metalsmith instance
+ * @returns {string[]} Files to process
  */
 export function validateFiles(files, options, metalsmith) {
   const { pattern, ignore } = options;

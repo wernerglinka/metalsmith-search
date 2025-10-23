@@ -30,7 +30,9 @@ parsing **Architecture**: Dual ESM/CommonJS support with simplified, maintainabl
 
 ## MCP Server Integration (CRITICAL)
 
-**IMPORTANT**: This plugin was created with `metalsmith-plugin-mcp-server`. When working on this plugin, AI assistants (Claude) MUST use the MCP server tools rather than creating their own implementations.
+**IMPORTANT**: This plugin was created with `metalsmith-plugin-mcp-server`. When working on this
+plugin, AI assistants (Claude) MUST use the MCP server tools rather than creating their own
+implementations.
 
 ### Essential MCP Commands
 
@@ -69,6 +71,7 @@ update-deps .
 ### Common Mistakes to AVOID
 
 **❌ Wrong Approach:**
+
 - Creating custom CLAUDE.md content instead of using `get-template plugin/CLAUDE.md`
 - Scaffolding entire new plugins when you just need a template
 - Making up template content or "simplifying" official templates
@@ -76,6 +79,7 @@ update-deps .
 - Using commands like `npx metalsmith-plugin-mcp-server scaffold ./ CLAUDE.md claude-context`
 
 **✅ Correct Approach:**
+
 - Use `list-templates` to see what's available
 - Use `get-template <template-name>` to get exact content
 - Follow validation recommendations exactly as provided
@@ -85,6 +89,7 @@ update-deps .
 ### Quick Commands
 
 **Quality & Validation:**
+
 ```bash
 npx metalsmith-plugin-mcp-server validate . --functional  # Validate with MCP server
 npm test                                                   # Run tests with coverage
@@ -92,18 +97,19 @@ npm run lint                                              # Lint and fix code
 ```
 
 **Release Process:**
+
 ```bash
 npm run release:patch   # Bug fixes (1.5.4 → 1.5.5)
-npm run release:minor   # New features (1.5.4 → 1.6.0)  
+npm run release:minor   # New features (1.5.4 → 1.6.0)
 npm run release:major   # Breaking changes (1.5.4 → 2.0.0)
 ```
 
 **Development:**
+
 ```bash
 npm run build          # Build ESM/CJS versions
 npm run test:coverage  # Run tests with detailed coverage
 ```
-
 
 ## Pre-Commit and Release Workflow
 
