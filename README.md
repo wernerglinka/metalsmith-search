@@ -6,7 +6,7 @@
 [![Known Vulnerabilities](https://snyk.io/test/npm/metalsmith-search/badge.svg)](https://snyk.io/test/npm/metalsmith-search)
 
 An HTML-first Metalsmith search plugin with Fuse.js and Cheerio for accurate content indexing. For a
-live example of Metasmith Search see the
+live example of Metalsmith Search see the
 [Metalsmith Component Library](https://ms-components-library.netlify.app/references/sections/search/)
 website.
 
