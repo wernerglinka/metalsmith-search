@@ -2,33 +2,14 @@
 
 ## Overview
 
-The metalsmith-search plugin implements a sophisticated anchor generation system that enables **deep
-linking to specific sections within pages**. This document explains the theory, implementation, and
-client-side integration of this system.
-
-## The Problem
-
-Traditional search plugins only return page-level results:
+The `metalsmith-search` plugin implements an anchor generation system that enables **deep linking to
+specific sections within pages**. This document explains the theory, implementation, and client-side
+integration of this system. The plugin implements **heading-based deep linking** that allows search
+results to point directly to sections:
 
 ```
 Search: "visual storytelling"
-Result: /docs/guide → User lands on page, must manually find section
-```
-
-This creates poor user experience because:
-
-- Users must scroll to find relevant content
-- No visual indication of where the match occurred
-- Longer pages become difficult to navigate from search results
-
-## The Solution: Deep Linking
-
-The plugin implements **heading-based deep linking** that allows search results to point directly to
-sections:
-
-```
-Search: "visual storytelling"
-Result: /docs/guide#visual-storytelling → Browser scrolls directly to section
+Results in link: /docs/guide#visual-storytelling → Browser scrolls directly to section
 ```
 
 ## Architecture: Two-Phase System
@@ -258,62 +239,6 @@ The search index includes heading metadata for each page:
 - **id** (`string`): URL-safe anchor ID (matches HTML id attribute)
 - **title** (`string`): Original heading text content
 
----
-
-## Uniqueness Guarantee
-
-### Problem: Duplicate Headings
-
-Real-world pages often have duplicate headings:
-
-```html
-<h2>Introduction</h2>
-<h2>Introduction</h2>
-<h2>Introduction</h2>
-```
-
-Without uniqueness handling, all three would get `id="introduction"`, causing:
-
-- Invalid HTML (duplicate IDs)
-- Browser navigation issues
-- Search result ambiguity
-
-### Solution: Counter Suffix
-
-```javascript
-let uniqueId = id;
-let counter = 1;
-while (usedIds.has(uniqueId)) {
-  uniqueId = `${id}-${counter}`;
-  counter++;
-}
-```
-
-**Result**:
-
-```html
-<h2 id="introduction">Introduction</h2>
-<h2 id="introduction-1">Introduction</h2>
-<h2 id="introduction-2">Introduction</h2>
-```
-
-### Tracking Used IDs
-
-```javascript
-const usedIds = new Set(); // Fast O(1) lookup
-
-// After processing each heading:
-usedIds.add(id);
-```
-
-Using a `Set` ensures:
-
-- Constant-time duplicate detection
-- No need to scan entire array
-- Memory efficient for large documents
-
----
-
 ## Client-Side Integration
 
 ### Search Index Usage
@@ -400,104 +325,6 @@ function generateTOC(entry) {
 // <li class="toc-h2"><a href="/docs/guide#installation">Installation</a></li>
 ```
 
----
-
-## Design Principles
-
-### 1. Preserve User Intent
-
-**Rule**: Never modify existing IDs
-
-```javascript
-let id = $heading.attr('id');
-
-if (!id) {
-  // Only generate if missing
-  id = generateAnchorId(title);
-}
-```
-
-**Rationale**: If a developer manually set an ID, respect it. They may have:
-
-- External links pointing to that ID
-- Analytics tracking that specific anchor
-- SEO optimization for that URL
-
-### 2. Functional Decomposition
-
-**Pattern**: Single-responsibility pure functions
-
-```javascript
-// BAD: Monolithic function
-function generateAnchor(text) {
-  return text
-    .toLowerCase()
-    .replace(/<[^>]+>/g, '')
-    .replace(/[^\w\s-]/g, '');
-  // ... 20 more operations
-}
-
-// GOOD: Composed pipeline
-function generateAnchor(text) {
-  let result = cleanTextForAnchor(text);
-  result = processNumbers(result);
-  result = truncateText(result);
-  return ensureValidAnchor(result);
-}
-```
-
-**Benefits**:
-
-- Each step is independently testable
-- Easy to modify one transformation without affecting others
-- Clear data flow through pipeline
-- Self-documenting code
-
-### 3. Defensive Programming
-
-**Input Validation**:
-
-```javascript
-function isValidTextInput(text) {
-  return text && typeof text === 'string';
-}
-
-if (!isValidTextInput(text)) {
-  return 'section'; // Safe fallback
-}
-```
-
-**Guarantees**:
-
-- Never return empty string (browsers ignore empty IDs)
-- Always return valid URL characters
-- Handle edge cases gracefully (null, undefined, numbers, objects)
-
-### 4. Zero External Dependencies
-
-**Implementation**: Uses only JavaScript built-ins
-
-```javascript
-// No external slugify library
-// No external sanitization library
-// No external uniqueness library
-
-// Pure JavaScript:
-text
-  .toLowerCase()
-  .replace(/[^\w\s-]/g, '')
-  .replace(/[\s_]+/g, separator);
-```
-
-**Advantages**:
-
-- Smaller bundle size
-- No security vulnerabilities from dependencies
-- Full control over behavior
-- Easier to maintain
-
----
-
 ## Edge Cases Handled
 
 ### 1. Empty or Whitespace-Only Headings
@@ -543,9 +370,6 @@ cleanTextForAnchor('Über uns', '-');
 // → "ber-uns"
 ```
 
-**Note**: For better internationalization, you could enhance this to use `slugify` libraries that
-preserve non-ASCII characters, but current implementation prioritizes simplicity.
-
 ### 4. Very Long Headings
 
 ```html
@@ -559,187 +383,11 @@ truncateText('this-is-an-extremely-long-heading...', 50, '-');
 // → "this-is-an-extremely-long-heading-that-would"
 ```
 
-### 5. Invalid Input Types
-
-```javascript
-generateAnchorId(null); // → "section"
-generateAnchorId(undefined); // → "section"
-generateAnchorId(123); // → "section"
-generateAnchorId({}); // → "section"
-```
-
----
-
-## Testing Strategy
-
-### Unit Tests: Anchor Generator
-
-**Location**: `test/utilities.test.js`
-
-Tests cover:
-
-- Basic text transformation
-- Special character removal
-- HTML tag stripping
-- Number handling (allowed/disallowed)
-- Prefix/suffix addition
-- Truncation
-- Invalid input fallbacks
-
-### Integration Tests: Content Extraction
-
-Tests verify:
-
-- Headings are extracted from HTML
-- IDs are generated for headings without IDs
-- Existing IDs are preserved
-- Duplicate headings get unique IDs
-- Heading metadata appears in search index
-
-### Real-World Test Cases
-
-**Fixture**: `test/fixtures/basic/src/duplicate-headings.html`
-
-```html
-<h2>Introduction</h2>
-<h2>Introduction</h2>
-<h2>Introduction</h2>
-```
-
-**Expected Output**: `build/search-index.json`
-
-```json
-{
-  "headings": [
-    { "level": "h2", "id": "introduction", "title": "Introduction" },
-    { "level": "h2", "id": "introduction-1", "title": "Introduction" },
-    { "level": "h2", "id": "introduction-2", "title": "Introduction" }
-  ]
-}
-```
-
----
-
-## Performance Considerations
-
-### HTML Modification
-
-**Complexity**: O(n) where n = number of headings
-
-```javascript
-$('h1, h2, h3, h4, h5, h6').each((index, el) => {
-  // Constant-time operations per heading
-  const id = generateAnchorId(title); // O(m) where m = title length
-  $heading.attr('id', id); // O(1)
-  usedIds.add(id); // O(1)
-});
-```
-
-**Typical Page**: 10-50 headings → Negligible performance impact
-
-### ID Generation
-
-**Complexity**: O(m) where m = text length
-
-All operations are linear string transformations:
-
-- `.toLowerCase()` → O(m)
-- `.replace()` → O(m)
-- `Set.has()` → O(1)
-
-**Bottleneck**: None. String operations are optimized in V8/JavaScript engines.
-
-### Memory Usage
-
-```javascript
-const usedIds = new Set();
-```
-
-**Per-page overhead**: ~50-100 bytes per heading (storing IDs in Set)
-
-**Total overhead**: Minimal. Cleared after each page is processed.
-
----
-
-## Future Enhancements
-
-### 1. Configurable ID Generation
-
-Allow users to customize the anchor generation algorithm:
-
-```javascript
-search({
-  anchorOptions: {
-    maxLength: 60,
-    separator: '_',
-    allowNumbers: false,
-    preserveCase: true,
-  },
-});
-```
-
-### 2. Smart Section Matching
-
-Match search terms against specific sections:
-
-```javascript
-// If search term matches a heading, boost that result
-const searchTerm = 'installation';
-const matchingHeading = entry.headings.find(
-  (h) => h.title.toLowerCase() === searchTerm.toLowerCase()
-);
-
-if (matchingHeading) {
-  result.score *= 2; // Boost exact heading matches
-  result.deepLink = `${entry.url}#${matchingHeading.id}`;
-}
-```
-
-### 3. Multilingual Support
-
-Better handling of non-ASCII characters:
-
-```javascript
-import slugify from '@sindresorhus/slugify';
-
-function generateAnchorId(text, options = {}) {
-  return slugify(text, {
-    lowercase: true,
-    separator: options.separator || '-',
-    preserveCharacters: ['ä', 'ö', 'ü'], // Preserve umlauts
-  });
-}
-```
-
-### 4. Heading Context in Search Results
-
-Include surrounding content for better context:
-
-```javascript
-{
-  "headings": [
-    {
-      "level": "h2",
-      "id": "installation",
-      "title": "Installation",
-      "content": "First 200 chars after this heading..." // NEW
-    }
-  ]
-}
-```
-
 ---
 
 ## Conclusion
 
-The anchor generation system provides a robust foundation for deep linking in search results. Key
-achievements:
-
-✅ **Automatic ID generation** - No manual intervention required ✅ **Uniqueness guarantee** -
-Handles duplicate headings gracefully ✅ **HTML modification** - IDs work immediately in browsers ✅
-**Search index metadata** - Enables client-side deep linking ✅ **Zero dependencies** - Pure
-JavaScript implementation ✅ **Fully tested** - Edge cases covered ✅ **Maintainable** - Functional
-decomposition for clarity
+The anchor generation system provides a robust foundation for deep linking in search results.
 
 This system transforms basic page-level search into precise section-level navigation, significantly
 improving user experience.
