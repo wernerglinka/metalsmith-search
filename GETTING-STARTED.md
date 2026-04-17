@@ -14,7 +14,7 @@ Metalsmith site using Fuse.js-powered fuzzy search with HTML-first indexing.
 
 ## Prerequisites
 
-- Node.js 18 or higher
+- Node.js 22 or higher
 - An existing Metalsmith project
 - Basic familiarity with Metalsmith plugins
 
@@ -92,7 +92,7 @@ import markdown from '@metalsmith/markdown';
 import layouts from '@metalsmith/layouts';
 import search from 'metalsmith-search';
 
-const metalsmith = Metalsmith(__dirname)
+const metalsmith = Metalsmith(import.meta.dirname)
   .source('src')
   .destination('dist')
 

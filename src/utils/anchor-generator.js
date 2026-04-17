@@ -101,7 +101,7 @@ export function generateAnchorId(text, options = {}) {
     suffix: '',
     allowNumbers: true,
     separator: '-',
-    ...options,
+    ...options
   };
 
   let anchor = cleanTextForAnchor(text, config.separator);

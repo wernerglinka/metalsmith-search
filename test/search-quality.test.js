@@ -3,11 +3,12 @@
  * Integrated from universal-search-tester for validating search index quality
  */
 
-import assert from 'assert';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Metalsmith from 'metalsmith';
-import search from '../lib/index.js';
+import search from '../src/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(__dirname, 'fixtures');
@@ -17,24 +18,13 @@ const fixtures = join(__dirname, 'fixtures');
  */
 const testTerms = {
   // Valid terms that should return results
-  validTerms: [
-    'content',
-    'page',
-    'test',
-    'search',
-    'metalsmith',
-    'component',
-    'section',
-    'data',
-    'build',
-    'plugin',
-  ],
+  validTerms: ['content', 'page', 'test', 'search', 'metalsmith', 'component', 'section', 'data', 'build', 'plugin'],
 
   // Invalid terms that should return few/no results
   invalidTerms: ['asdf', 'qwerty', 'xyz', 'zzz', 'qpzm', 'wxyz', 'mnbv', 'zxcv', 'hjkl', 'plkj'],
 
   // Edge cases to test robustness
-  edgeCases: ['', ' ', '  ', '\t', '\n', 'a', 'i', 'ab', 'it', 'TEST', 'Test'],
+  edgeCases: ['', ' ', '  ', '\t', '\n', 'a', 'i', 'ab', 'it', 'TEST', 'Test']
 };
 
 /**
@@ -47,7 +37,7 @@ class SimpleSearch {
       keys: options.keys || ['title', 'content'],
       threshold: options.threshold || 0.3,
       minMatchCharLength: options.minMatchCharLength || 2,
-      ...options,
+      ...options
     };
   }
 
@@ -127,7 +117,7 @@ function calculateQualityScore(results) {
     validTermsScore: 0,
     invalidTermsScore: 0,
     edgeCasesScore: 0,
-    overallScore: 0,
+    overallScore: 0
   };
 
   // Valid terms should return results
@@ -157,13 +147,13 @@ function testSearchQuality(searchIndex, options = {}) {
   const searcher = new SimpleSearch(searchIndex.entries || searchIndex, {
     keys: ['title', 'content', 'excerpt'],
     threshold: options.threshold || 0.3, // Match Fuse.js default threshold
-    minMatchCharLength: 1,
+    minMatchCharLength: 1
   });
 
   const results = {
     validTerms: [],
     invalidTerms: [],
-    edgeCases: [],
+    edgeCases: []
   };
 
   // Test valid terms
@@ -173,13 +163,13 @@ function testSearchQuality(searchIndex, options = {}) {
       results.validTerms.push({
         term,
         resultCount: searchResults.length,
-        topScore: searchResults[0]?.score || null,
+        topScore: searchResults[0]?.score || null
       });
     } catch (error) {
       results.validTerms.push({
         term,
         resultCount: 0,
-        error: error.message,
+        error: error.message
       });
     }
   });
@@ -191,13 +181,13 @@ function testSearchQuality(searchIndex, options = {}) {
       results.invalidTerms.push({
         term,
         resultCount: searchResults.length,
-        topScore: searchResults[0]?.score || null,
+        topScore: searchResults[0]?.score || null
       });
     } catch (error) {
       results.invalidTerms.push({
         term,
         resultCount: 0,
-        error: error.message,
+        error: error.message
       });
     }
   });
@@ -209,27 +199,25 @@ function testSearchQuality(searchIndex, options = {}) {
       results.edgeCases.push({
         term: term === '' ? '(empty)' : term === ' ' ? '(space)' : term,
         resultCount: searchResults.length,
-        error: null,
+        error: null
       });
     } catch (error) {
       results.edgeCases.push({
         term: term === '' ? '(empty)' : term === ' ' ? '(space)' : term,
         resultCount: 0,
-        error: error.message,
+        error: error.message
       });
     }
   });
 
   return {
     results,
-    metrics: calculateQualityScore(results),
+    metrics: calculateQualityScore(results)
   };
 }
 
-describe('Search Quality Tests', function () {
-  this.timeout(10000);
-
-  it('should generate a high-quality search index from HTML content', function (done) {
+describe('Search Quality Tests', () => {
+  it('should generate a high-quality search index from HTML content', (_t, done) => {
     const ms = Metalsmith(join(fixtures, 'basic'))
       .source('src')
       .destination('build')
@@ -238,11 +226,11 @@ describe('Search Quality Tests', function () {
         search({
           pattern: '**/*.html',
           indexPath: 'search-index.json',
-          excludeSelectors: [], // Index all content for quality testing
+          excludeSelectors: [] // Index all content for quality testing
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }

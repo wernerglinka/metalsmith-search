@@ -11,14 +11,14 @@ import { validateFiles, normalizeOptions } from './config.js';
  * @param {Object} files - Metalsmith files object
  * @param {Object} options - Plugin options
  * @param {Function} debug - Debug logging function
- * @returns {Promise<void>}
+ * @returns {void}
  */
 export function createEmptyIndex(files, options, debug) {
   debug('Creating empty search index');
   const emptySearchIndex = createSearchIndex([], options);
   files[options.indexPath] = {
     contents: Buffer.from(JSON.stringify(emptySearchIndex, null, 2)),
-    mode: '0644',
+    mode: '0644'
   };
   debug(`Created empty search index at ${options.indexPath}`);
 }
@@ -29,7 +29,7 @@ export function createEmptyIndex(files, options, debug) {
  * @param {Object} options - Plugin options
  * @param {Object} metalsmith - Metalsmith instance
  * @param {Function} debug - Debug logging function
- * @returns {Promise<Object>} Object with setup results
+ * @returns {Object} Object with setup results
  */
 export function setupFileProcessing(files, options, metalsmith, debug) {
   // Normalize and validate options
@@ -48,7 +48,7 @@ export function setupFileProcessing(files, options, metalsmith, debug) {
   return {
     shouldExit: false,
     normalizedOptions,
-    filesToProcess,
+    filesToProcess
   };
 }
 
@@ -58,7 +58,7 @@ export function setupFileProcessing(files, options, metalsmith, debug) {
  * @param {Object} files - Metalsmith files object
  * @param {Object} options - Plugin options
  * @param {Function} debug - Debug logging function
- * @returns {Promise<void>}
+ * @returns {void}
  */
 export function createAndSaveIndex(searchEntries, files, options, debug) {
   // Create the search index
@@ -67,7 +67,7 @@ export function createAndSaveIndex(searchEntries, files, options, debug) {
   // Add the search index file to Metalsmith files
   files[options.indexPath] = {
     contents: Buffer.from(JSON.stringify(searchIndex, null, 2)),
-    mode: '0644',
+    mode: '0644'
   };
 
   debug(`Created search index at ${options.indexPath}`);

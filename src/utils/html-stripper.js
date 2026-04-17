@@ -22,13 +22,13 @@ export function stripHtml(html, options = {}) {
   const config = {
     excludeSelectors: [],
     decodeEntities: true,
-    ...options,
+    ...options
   };
 
   try {
     // Load HTML with Cheerio
     const $ = cheerio.load(html, {
-      decodeEntities: config.decodeEntities,
+      decodeEntities: config.decodeEntities
     });
 
     // Remove excluded elements

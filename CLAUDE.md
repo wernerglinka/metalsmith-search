@@ -30,9 +30,7 @@ parsing **Architecture**: Dual ESM/CommonJS support with simplified, maintainabl
 
 ## MCP Server Integration (CRITICAL)
 
-**IMPORTANT**: This plugin was created with `metalsmith-plugin-mcp-server`. When working on this
-plugin, AI assistants (Claude) MUST use the MCP server tools rather than creating their own
-implementations.
+**IMPORTANT**: This plugin was created with `metalsmith-plugin-mcp-server`. When working on this plugin, AI assistants (Claude) MUST use the MCP server tools rather than creating their own implementations.
 
 ### Essential MCP Commands
 
@@ -43,7 +41,7 @@ list-templates
 # Get specific template content (use these exactly as provided)
 get-template plugin/CLAUDE.md
 get-template configs/release-it.json
-get-template configs/eslint.config.js
+get-template configs/biome.json
 
 # Validate plugin and get actionable recommendations
 validate .
@@ -53,7 +51,7 @@ configs .
 
 # Show recommended configuration templates
 show-template release-it
-show-template eslint
+show-template biome
 
 # Update dependencies
 update-deps .
@@ -71,7 +69,6 @@ update-deps .
 ### Common Mistakes to AVOID
 
 **❌ Wrong Approach:**
-
 - Creating custom CLAUDE.md content instead of using `get-template plugin/CLAUDE.md`
 - Scaffolding entire new plugins when you just need a template
 - Making up template content or "simplifying" official templates
@@ -79,17 +76,71 @@ update-deps .
 - Using commands like `npx metalsmith-plugin-mcp-server scaffold ./ CLAUDE.md claude-context`
 
 **✅ Correct Approach:**
-
 - Use `list-templates` to see what's available
 - Use `get-template <template-name>` to get exact content
 - Follow validation recommendations exactly as provided
 - Ask for clarification when commands seem confusing
 - Always use official templates verbatim
 
+### Migration from Legacy Toolchain / Dual Build
+
+**IMPORTANT FOR AI ASSISTANTS**: Before working on this plugin, check whether it still uses the pre-v3.0.0 dual ESM/CJS build, or the pre-v2.0.0 mocha/eslint/c8 toolchain. The MCP server now scaffolds **ESM-only** plugins using **Biome**, the **native `node:test` runner**, and **native coverage**. Published directly from `src/` — no build step, no `lib/`, no microbundle.
+
+**Detection — the plugin needs migration if ANY of these are true:**
+
+- `package.json` has `main`, `module`, or dual `exports.import` / `exports.require` fields
+- `package.json` devDeps include `microbundle`, `eslint`, `prettier`, `mocha`, `chai`, `c8`, `nyc`
+- `package.json` scripts include `build`, `test:esm`, `test:cjs`, or `prepublishOnly: npm run build`
+- Files present: `lib/`, `eslint.config.js`, `.eslintrc*`, `prettier.config.js`, `.c8rc.json`, `.mocharc.*`, `test/**/*.test.cjs`
+- `engines.node` is less than `>= 22.0.0`
+
+**Migration steps — execute in order, stopping to confirm with the user before running destructive commands:**
+
+1. **Delete legacy files:**
+
+   ```bash
+   rm -rf lib/
+   rm -f eslint.config.js .eslintrc* prettier.config.js .prettierrc* .c8rc.json .mocharc.*
+   rm -f test/**/*.test.cjs
+   ```
+
+2. **Rewrite `package.json`** — use `get-template plugin/package.json` as the source of truth:
+   - Remove `main`, `module`; set `"exports": "./src/index.js"`
+   - Set `files: ["src/**/*.js", "LICENSE", "README.md"]`
+   - Remove scripts: `build`, `test:esm`, `test:cjs`, `prepublishOnly`
+   - Remove devDeps: `microbundle`, `eslint`, `prettier`, `mocha`, `chai`, `c8`, `nyc`
+   - Add devDep: `@biomejs/biome` (latest `^2.x`)
+   - Bump `engines.node` to `">= 22.0.0"`
+
+3. **Generate the Biome config:**
+
+   ```bash
+   npx metalsmith-plugin-mcp-server configs . --configs biome
+   ```
+
+4. **Rewrite test imports** (manual — cannot be automated safely):
+   - `import { describe, it, before, after, beforeEach, afterEach } from 'mocha'` → `from 'node:test'`
+   - `import { expect } from 'chai'` → `import assert from 'node:assert/strict'`
+   - Convert assertions: `expect(x).to.equal(y)` → `assert.equal(x, y)`, `expect(x).to.deep.equal(y)` → `assert.deepEqual(x, y)`, `expect(x).to.be.true` → `assert.equal(x, true)`, `expect(fn).to.throw()` → `assert.throws(fn)`
+   - Callback-style tests: `it('name', (done) => {...})` → `it('name', (_t, done) => {...})`
+
+5. **Update README examples** — replace `__dirname` with `import.meta.dirname`, remove any `require()` usage of this plugin, drop the ESM/CJS badge
+
+6. **Reinstall and verify:**
+
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   npm run lint
+   npm test
+   npx metalsmith-plugin-mcp-server validate . --functional
+   ```
+
+**Do NOT proceed with normal development tasks if legacy toolchain files or dual-build artifacts are detected — migrate first so this CLAUDE.md accurately reflects the project.**
+
 ### Quick Commands
 
 **Quality & Validation:**
-
 ```bash
 npx metalsmith-plugin-mcp-server validate . --functional  # Validate with MCP server
 npm test                                                   # Run tests with coverage
@@ -97,19 +148,17 @@ npm run lint                                              # Lint and fix code
 ```
 
 **Release Process:**
-
 ```bash
 npm run release:patch   # Bug fixes (1.5.4 → 1.5.5)
-npm run release:minor   # New features (1.5.4 → 1.6.0)
+npm run release:minor   # New features (1.5.4 → 1.6.0)  
 npm run release:major   # Breaking changes (1.5.4 → 2.0.0)
 ```
 
 **Development:**
-
 ```bash
-npm run build          # Build ESM/CJS versions
 npm run test:coverage  # Run tests with detailed coverage
 ```
+
 
 ## Pre-Commit and Release Workflow
 

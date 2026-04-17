@@ -69,16 +69,15 @@ export function extractSearchableContent(file, filename, options, metalsmith) {
     // Extract all headings and ensure they have IDs
     const headings = extractAndProcessHeadings($, debug);
 
-    // Extract all text content
-    const mainText = $.text().trim();
+    // Extract all text content (collapse inter-tag whitespace from cheerio)
+    const mainText = $.text().replace(/\s+/g, ' ').trim();
     if (!mainText) {
       debug(`Skipping ${filename}: no text content after processing`);
       return [];
     }
 
-    // Create excerpt from content (first 250 chars)
-    const excerpt =
-      mainText.length > 300 ? `${mainText.substring(0, 250).replace(/\s+\S*$/, '')}...` : mainText;
+    // Create excerpt from content (first 250 chars, cut at word boundary)
+    const excerpt = mainText.length > 250 ? `${mainText.substring(0, 250).replace(/\s+\S*$/, '')}...` : mainText;
 
     // Create single page entry
     const entry = {
@@ -89,7 +88,7 @@ export function extractSearchableContent(file, filename, options, metalsmith) {
       content: mainText,
       excerpt,
       headings, // Array of {level, id, title} for scroll-to functionality
-      wordCount: mainText.split(/\s+/).filter(Boolean).length,
+      wordCount: mainText.split(/\s+/).filter(Boolean).length
     };
 
     debug(`Extracted page entry with ${headings.length} headings and ${entry.wordCount} words`);
@@ -114,7 +113,7 @@ function extractAndProcessHeadings($, debug) {
   const headings = [];
   const usedIds = new Set(); // Track used IDs to ensure uniqueness
 
-  $('h1, h2, h3, h4, h5, h6').each((index, el) => {
+  $('h1, h2, h3, h4, h5, h6').each((_index, el) => {
     const $heading = $(el);
     const level = el.name; // 'h1', 'h2', etc.
     const title = $heading.text().trim();
@@ -149,7 +148,7 @@ function extractAndProcessHeadings($, debug) {
     headings.push({
       level,
       id,
-      title,
+      title
     });
   });
 

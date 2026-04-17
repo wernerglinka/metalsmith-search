@@ -2,8 +2,6 @@
 
 [![metalsmith:plugin][metalsmith-badge]][metalsmith-url] [![npm: version][npm-badge]][npm-url]
 [![license: MIT][license-badge]][license-url] [![test coverage][coverage-badge]][coverage-url]
-[![ESM/CommonJS][modules-badge]][npm-url]
-[![Known Vulnerabilities](https://snyk.io/test/npm/metalsmith-search/badge.svg)](https://snyk.io/test/npm/metalsmith-search)
 
 An HTML-first Metalsmith search plugin with Fuse.js and Cheerio for accurate content indexing. For a
 live example of Metalsmith Search see the
@@ -22,12 +20,19 @@ website.
 - Automatic anchor ID generation for headings without IDs
 - Integrates frontmatter fields into search index
 - Powered by Fuse.js with configurable search keys
-- Supports both ESM and CommonJS
+- ESM-only (Node.js 22+)
 
 ## Installation
 
 ```bash
 npm install metalsmith-search
+```
+
+The plugin generates a Fuse.js-compatible JSON index at build time but does not depend on Fuse.js
+itself. To consume the index in the browser, install Fuse.js in your site separately:
+
+```bash
+npm install fuse.js
 ```
 
 ## Usage
@@ -39,7 +44,7 @@ import Metalsmith from 'metalsmith';
 import layouts from '@metalsmith/layouts';
 import search from 'metalsmith-search';
 
-Metalsmith(__dirname)
+Metalsmith(import.meta.dirname)
   .source('./src')
   .destination('./build')
   .use(layouts()) // HTML generation FIRST
@@ -63,12 +68,10 @@ metalsmith.use(
   search({
     pattern: '**/*.html',
     excludeSelectors: [], // Index ALL content including nav/header/footer
-    contentFields: ['title', 'description', 'summary'],
     fuseOptions: {
       keys: [
         { name: 'title', weight: 10 },
-        { name: 'content', weight: 5 },
-        { name: 'description', weight: 3 },
+        { name: 'content', weight: 5 }
       ],
       minMatchCharLength: 3, // Filter stop words
     },
@@ -100,7 +103,6 @@ The plugin processes HTML files **after** layouts/templates for accurate search 
 | `ignore`           | `string \| string[]` | `['**/search-index.json']`                       | Files to ignore                         |
 | `indexPath`        | `string`             | `'search-index.json'`                            | Output path for search index            |
 | `excludeSelectors` | `string[]`           | `['nav', 'header', 'footer']`                    | CSS selectors to exclude from indexing  |
-| `contentFields`    | `string[]`           | `['title', 'description', 'summary', 'excerpt']` | Frontmatter fields to include in search |
 | `fuseOptions`      | `object`             | `{keys: [...], threshold: 0.3, ...}`             | Fuse.js configuration options           |
 
 ### Fuse.js Options
@@ -112,12 +114,11 @@ fuseOptions: {
   // Search sensitivity (0.0 = exact match, 1.0 = match anything)
   threshold: 0.3,
 
-  // Search keys with weights
+  // Search keys with weights (must match fields produced by the extractor)
   keys: [
-    { name: 'title', weight: 10 },      // Page titles (highest priority)
-    { name: 'content', weight: 5 },     // Main text content
-    { name: 'description', weight: 3 }, // Page descriptions
-    { name: 'tags', weight: 7 },        // Content tags
+    { name: 'title', weight: 10 },   // Page title from <title> or <h1>
+    { name: 'content', weight: 5 },  // All page text content
+    { name: 'excerpt', weight: 3 }   // Auto-generated excerpt
   ],
 
   // Include match details and scores in results
@@ -139,10 +140,8 @@ Each page generates a single search entry with this structure:
   "type": "page",
   "url": "/blog/post",
   "title": "Blog Post Title",
-  "description": "Page description",
   "excerpt": "Brief excerpt...",
   "content": "All page text content...",
-  "tags": ["javascript", "tutorial"],
   "headings": [
     { "level": "h2", "id": "introduction", "title": "Introduction" },
     { "level": "h3", "id": "overview", "title": "Overview" },
@@ -188,7 +187,7 @@ Version 0.2.0 introduces breaking changes with HTML-first architecture:
 3. **Removed options**: `async`, `batchSize`, `lazyLoad`, `processMarkdownFields`, `sectionsField`,
    `sectionTypeField`, `autoDetectSectionTypes`, `componentFields`, `maxSectionLength`, `chunkSize`,
    `minSectionLength`, `frontmatterFields`
-4. **New options**: `excludeSelectors`, `contentFields`
+4. **New options**: `excludeSelectors`
 5. **New dependency**: Cheerio added for HTML parsing
 
 ### Migration Steps
@@ -215,9 +214,7 @@ metalsmith
   .use(
     search({
       pattern: '**/*.html', // Change to HTML
-      indexLevels: ['page', 'section'],
       excludeSelectors: ['nav', 'header', 'footer'], // Optional
-      contentFields: ['title', 'description'], // Configurable
     })
   );
 ```
@@ -232,7 +229,7 @@ This plugin is a modern replacement for the deprecated metalsmith-lunr:
 - **Accurate indexing**: Cheerio HTML parsing
 - **Smaller bundle**: More efficient than Lunr.js
 - **Active maintenance**: Regular updates and bug fixes
-- **Modern JavaScript**: ESM/CJS support
+- **Modern JavaScript**: ESM-only, Node.js 22+
 
 **Migration:**
 
@@ -240,7 +237,7 @@ This plugin is a modern replacement for the deprecated metalsmith-lunr:
 // Old metalsmith-lunr
 import lunr from 'metalsmith-lunr';
 
-Metalsmith(__dirname)
+Metalsmith(import.meta.dirname)
   .use(markdown())
   .use(
     lunr({
@@ -252,7 +249,7 @@ Metalsmith(__dirname)
 // New metalsmith-search
 import search from 'metalsmith-search';
 
-Metalsmith(__dirname)
+Metalsmith(import.meta.dirname)
   .use(markdown())
   .use(layouts()) // Add layouts
   .use(
@@ -280,4 +277,3 @@ MIT © [Werner Glinka](https://github.com/wernerglinka)
 [license-url]: LICENSE
 [coverage-badge]: https://img.shields.io/badge/test%20coverage-97%25-brightgreen
 [coverage-url]: #testing-and-coverage
-[modules-badge]: https://img.shields.io/badge/modules-ESM%2FCJS-blue

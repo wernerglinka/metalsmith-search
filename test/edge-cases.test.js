@@ -2,30 +2,29 @@
  * Edge Case Tests for Branch Coverage
  * Tests specific edge cases using fixture files
  */
-import assert from 'assert';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Metalsmith from 'metalsmith';
-import search from '../lib/index.js';
+import search from '../src/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(__dirname, 'fixtures', 'basic');
 
-describe('Edge Cases for Branch Coverage', function () {
-  this.timeout(10000);
-
-  it('should handle empty heading titles', function (done) {
+describe('Edge Cases for Branch Coverage', () => {
+  it('should handle empty heading titles', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
       .clean(false)
       .use(
         search({
-          pattern: '**/empty-headings.html',
+          pattern: '**/empty-headings.html'
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -46,18 +45,18 @@ describe('Edge Cases for Branch Coverage', function () {
     });
   });
 
-  it('should generate unique IDs for duplicate heading titles', function (done) {
+  it('should generate unique IDs for duplicate heading titles', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
       .clean(false)
       .use(
         search({
-          pattern: '**/duplicate-headings.html',
+          pattern: '**/duplicate-headings.html'
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -87,18 +86,18 @@ describe('Edge Cases for Branch Coverage', function () {
     });
   });
 
-  it('should use fallback title when no title or h1 exists', function (done) {
+  it('should use fallback title when no title or h1 exists', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
       .clean(false)
       .use(
         search({
-          pattern: '**/no-title.html',
+          pattern: '**/no-title.html'
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -117,18 +116,18 @@ describe('Edge Cases for Branch Coverage', function () {
     });
   });
 
-  it('should skip files with only whitespace content', function (done) {
+  it('should skip files with only whitespace content', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
       .clean(false)
       .use(
         search({
-          pattern: '**/whitespace-only.html',
+          pattern: '**/whitespace-only.html'
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -146,18 +145,18 @@ describe('Edge Cases for Branch Coverage', function () {
     });
   });
 
-  it('should handle short content without truncation', function (done) {
+  it('should handle short content without truncation', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
       .clean(false)
       .use(
         search({
-          pattern: '**/sample.html', // Small file
+          pattern: '**/sample.html' // Small file
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -169,8 +168,8 @@ describe('Edge Cases for Branch Coverage', function () {
         const entry = searchIndex.entries[0];
         assert(entry, 'Should have an entry');
 
-        // If content is short, excerpt should equal content
-        if (entry.content.length <= 300) {
+        // If content is short (<= 250 chars), excerpt should equal content
+        if (entry.content.length <= 250) {
           assert.strictEqual(entry.excerpt, entry.content, 'Short excerpt should equal content');
           assert(!entry.excerpt.endsWith('...'), 'Short content should not have ellipsis');
         }
@@ -181,18 +180,18 @@ describe('Edge Cases for Branch Coverage', function () {
     });
   });
 
-  it('should truncate long content with ellipsis', function (done) {
+  it('should truncate long content with ellipsis', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
       .clean(false)
       .use(
         search({
-          pattern: '**/traditional-long-article.html', // Large file
+          pattern: '**/traditional-long-article.html' // Large file
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -215,18 +214,18 @@ describe('Edge Cases for Branch Coverage', function () {
     });
   });
 
-  it('should normalize index.html URLs correctly', function (done) {
+  it('should normalize index.html URLs correctly', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
       .clean(false)
       .use(
         search({
-          pattern: 'index.html', // Exact match for root index.html only
+          pattern: 'index.html' // Exact match for root index.html only
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -245,7 +244,7 @@ describe('Edge Cases for Branch Coverage', function () {
     });
   });
 
-  it('should handle empty excludeSelectors array', function (done) {
+  it('should handle empty excludeSelectors array', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
@@ -253,11 +252,11 @@ describe('Edge Cases for Branch Coverage', function () {
       .use(
         search({
           pattern: '**/sample.html',
-          excludeSelectors: [], // Empty array - include everything
+          excludeSelectors: [] // Empty array - include everything
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -274,7 +273,48 @@ describe('Edge Cases for Branch Coverage', function () {
     });
   });
 
-  it('should skip files with all content excluded', function (done) {
+  it('should skip files whose contents is not a Buffer', (_t, done) => {
+    const ms = Metalsmith(fixtures)
+      .source('src')
+      .destination('build')
+      .clean(false)
+      .use((files, _metalsmith, next) => {
+        files['injected-bad.html'] = { contents: 'not-a-buffer-string' };
+        files['injected-null.html'] = { contents: null };
+        next();
+      })
+      .use(
+        search({
+          pattern: ['injected-bad.html', 'injected-null.html']
+        })
+      )
+      .use((files, _metalsmith, next) => {
+        delete files['injected-bad.html'];
+        delete files['injected-null.html'];
+        next();
+      });
+
+    ms.build((err, files) => {
+      if (err) {
+        return done(err);
+      }
+
+      try {
+        const indexContent = files['search-index.json'].contents.toString();
+        const searchIndex = JSON.parse(indexContent);
+
+        const injectedEntries = searchIndex.entries.filter(
+          (e) => e.url === '/injected-bad' || e.url === '/injected-null'
+        );
+        assert.strictEqual(injectedEntries.length, 0, 'Should skip files with non-Buffer contents');
+        done();
+      } catch (error) {
+        done(error);
+      }
+    });
+  });
+
+  it('should skip files with all content excluded', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
@@ -282,11 +322,11 @@ describe('Edge Cases for Branch Coverage', function () {
       .use(
         search({
           pattern: '**/page-with-chrome.html',
-          excludeSelectors: ['nav', 'header', 'footer', 'main'], // Exclude everything
+          excludeSelectors: ['nav', 'header', 'footer', 'main'] // Exclude everything
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -296,11 +336,7 @@ describe('Edge Cases for Branch Coverage', function () {
         const searchIndex = JSON.parse(indexContent);
 
         // When all content is excluded, should have no entries
-        assert.strictEqual(
-          searchIndex.entries.length,
-          0,
-          'Should skip files with all content excluded'
-        );
+        assert.strictEqual(searchIndex.entries.length, 0, 'Should skip files with all content excluded');
         done();
       } catch (error) {
         done(error);

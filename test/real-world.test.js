@@ -2,19 +2,18 @@
  * Real-world HTML test
  * Tests the plugin with actual production HTML
  */
-import assert from 'assert';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Metalsmith from 'metalsmith';
-import search from '../lib/index.js';
+import search from '../src/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(__dirname, 'fixtures', 'basic');
 
-describe('Real-World HTML Processing', function () {
-  this.timeout(10000);
-
-  it('should extract content and headings from real-world blog post HTML', function (done) {
+describe('Real-World HTML Processing', () => {
+  it('should extract content and headings from real-world blog post HTML', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
@@ -22,11 +21,11 @@ describe('Real-World HTML Processing', function () {
       .use(
         search({
           pattern: '**/real-world.html',
-          excludeSelectors: ['header', 'footer', 'nav', 'script', 'style'],
+          excludeSelectors: ['header', 'footer', 'nav', 'script', 'style']
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -73,7 +72,7 @@ describe('Real-World HTML Processing', function () {
     });
   });
 
-  it('should include navigation when excludeSelectors is empty', function (done) {
+  it('should include navigation when excludeSelectors is empty', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
@@ -81,11 +80,11 @@ describe('Real-World HTML Processing', function () {
       .use(
         search({
           pattern: '**/real-world.html',
-          excludeSelectors: [], // Include everything
+          excludeSelectors: [] // Include everything
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -103,7 +102,7 @@ describe('Real-World HTML Processing', function () {
     });
   });
 
-  it('should extract all heading levels (h1-h6)', function (done) {
+  it('should extract all heading levels (h1-h6)', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
@@ -111,11 +110,11 @@ describe('Real-World HTML Processing', function () {
       .use(
         search({
           pattern: '**/real-world.html',
-          excludeSelectors: ['header', 'footer', 'nav'],
+          excludeSelectors: ['header', 'footer', 'nav']
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -132,10 +131,7 @@ describe('Real-World HTML Processing', function () {
         assert(heading.level, 'Heading should have level');
         assert(heading.id, 'Heading should have id');
         assert(heading.title, 'Heading should have title');
-        assert(
-          /^h[1-6]$/.test(heading.level),
-          `Heading level should be h1-h6, got: ${heading.level}`
-        );
+        assert(/^h[1-6]$/.test(heading.level), `Heading level should be h1-h6, got: ${heading.level}`);
       });
 
       // Verify different heading levels are captured
@@ -146,7 +142,7 @@ describe('Real-World HTML Processing', function () {
     });
   });
 
-  it('should handle duplicate heading titles by generating unique IDs', function (done) {
+  it('should handle duplicate heading titles by generating unique IDs', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
@@ -154,11 +150,11 @@ describe('Real-World HTML Processing', function () {
       .use(
         search({
           pattern: '**/traditional-long-article.html',
-          excludeSelectors: [],
+          excludeSelectors: []
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       if (err) {
         return done(err);
       }
@@ -181,7 +177,7 @@ describe('Real-World HTML Processing', function () {
     });
   });
 
-  it('should handle malformed HTML gracefully', function (done) {
+  it('should handle malformed HTML gracefully', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
       .destination('build')
@@ -189,11 +185,11 @@ describe('Real-World HTML Processing', function () {
       .use(
         search({
           pattern: '**/component-page.html',
-          excludeSelectors: [],
+          excludeSelectors: []
         })
       );
 
-    ms.build(function (err, files) {
+    ms.build((err, files) => {
       // Should not error even with unusual HTML
       if (err) {
         return done(err);

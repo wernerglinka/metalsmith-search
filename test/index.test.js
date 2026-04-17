@@ -1,45 +1,45 @@
-import assert from 'node:assert';
-import { describe, it, beforeEach } from 'mocha';
+import { describe, it, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
 import Metalsmith from 'metalsmith';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import search from '../src/index.js';
-import path from 'path';
-import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-describe('metalsmith-search (ESM)', function () {
+describe('metalsmith-search', () => {
   let metalsmith;
 
-  beforeEach(function () {
+  beforeEach(() => {
     metalsmith = Metalsmith(path.join(__dirname, 'fixtures', 'basic'));
   });
 
-  it('should export a function', function () {
-    assert.strictEqual(typeof search, 'function');
+  it('should export a function', () => {
+    assert.equal(typeof search, 'function');
   });
 
-  it('should return a metalsmith plugin', function () {
+  it('should return a metalsmith plugin', () => {
     const plugin = search();
-    assert.strictEqual(typeof plugin, 'function');
-    assert.strictEqual(plugin.length, 3);
+    assert.equal(typeof plugin, 'function');
+    assert.equal(plugin.length, 3);
   });
 
-  describe('basic functionality', function () {
-    it('should process files with minimal options', function (done) {
-      metalsmith.use(search({})).build(function (err, files) {
+  describe('basic functionality', () => {
+    it('should process files with minimal options', (_t, done) => {
+      metalsmith.use(search({})).build((err, files) => {
         if (err) {
           return done(err);
         }
 
-        assert.strictEqual(typeof files, 'object');
+        assert.equal(typeof files, 'object');
         assert.ok(files['search-index.json']);
 
         done();
       });
     });
 
-    it('should create search index file', function (done) {
-      metalsmith.use(search({})).build(function (err, files) {
+    it('should create search index file', (_t, done) => {
+      metalsmith.use(search({})).build((err, files) => {
         if (err) {
           return done(err);
         }
@@ -57,15 +57,15 @@ describe('metalsmith-search (ESM)', function () {
     });
   });
 
-  describe('options', function () {
-    it('should accept custom indexPath', function (done) {
+  describe('options', () => {
+    it('should accept custom indexPath', (_t, done) => {
       metalsmith
         .use(
           search({
-            indexPath: 'custom-search.json',
+            indexPath: 'custom-search.json'
           })
         )
-        .build(function (err, files) {
+        .build((err, files) => {
           if (err) {
             return done(err);
           }
@@ -78,21 +78,21 @@ describe('metalsmith-search (ESM)', function () {
     });
   });
 
-  describe('error handling', function () {
-    it('should handle empty file set', function (done) {
+  describe('error handling', () => {
+    it('should handle empty file set', (_t, done) => {
       const emptyMetalsmith = Metalsmith(path.join(__dirname, 'fixtures', 'empty'));
 
-      emptyMetalsmith.use(search({})).build(function (err, files) {
+      emptyMetalsmith.use(search({})).build((err, files) => {
         if (err) {
           return done(err);
         }
 
-        assert.strictEqual(typeof files, 'object');
+        assert.equal(typeof files, 'object');
         assert.ok(files['search-index.json']);
 
         const indexContent = JSON.parse(files['search-index.json'].contents.toString());
-        assert.strictEqual(indexContent.totalEntries, 0);
-        assert.strictEqual(indexContent.entries.length, 0);
+        assert.equal(indexContent.totalEntries, 0);
+        assert.equal(indexContent.entries.length, 0);
 
         done();
       });

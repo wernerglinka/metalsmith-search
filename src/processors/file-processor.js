@@ -12,22 +12,13 @@ import { extractSearchableContent } from './content-extractor.js';
  * @param {Object} options - Processing options
  * @param {Function} debug - Debug function
  * @param {Object} metalsmith - Metalsmith instance
- * @returns {Promise<Array>} Array of search entries
+ * @returns {Array} Array of search entries
  */
 function processFile(filename, files, options, debug, metalsmith) {
-  try {
-    const file = files[filename];
-
-    // Extract searchable content from the file
-    const fileSearchEntries = extractSearchableContent(file, filename, options, metalsmith);
-
-    debug(`Successfully processed: ${filename} (${fileSearchEntries.length} entries)`);
-    return fileSearchEntries;
-  } catch (error) {
-    debug(`Error processing ${filename}:`, error);
-    // Log but continue with other files
-    return [];
-  }
+  const file = files[filename];
+  const fileSearchEntries = extractSearchableContent(file, filename, options, metalsmith);
+  debug(`Successfully processed: ${filename} (${fileSearchEntries.length} entries)`);
+  return fileSearchEntries;
 }
 
 /**
@@ -37,12 +28,12 @@ function processFile(filename, files, options, debug, metalsmith) {
  * @param {Object} options - Processing options
  * @param {Function} debug - Debug function
  * @param {Object} metalsmith - Metalsmith instance
- * @returns {Promise<Array>} All search entries from all files
+ * @returns {Array} All search entries from all files
  */
 export function processAllFiles(filesToProcess, files, options, debug, metalsmith) {
   const allSearchEntries = [];
 
-  // Process all files synchronously (Cheerio parsing is fast)
+  // Cheerio parsing is synchronous and fast — no batching needed
   for (const filename of filesToProcess) {
     const entries = processFile(filename, files, options, debug, metalsmith);
     allSearchEntries.push(...entries);

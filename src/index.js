@@ -19,7 +19,6 @@ import { setupFileProcessing, createAndSaveIndex } from './utils/index-helpers.j
  * @property {string|string[]} [ignore] - Files to ignore
  * @property {string} [indexPath] - Output path for search index (default: 'search-index.json')
  * @property {string[]} [excludeSelectors] - CSS selectors to exclude (e.g., ['nav', 'footer'])
- * @property {string[]} [contentFields] - Frontmatter fields to index
  * @property {Object} [fuseOptions] - Fuse.js configuration options
  */
 
@@ -51,13 +50,7 @@ export default function search(options = {}) {
       const { normalizedOptions, filesToProcess } = setup;
 
       // Process all files and collect search entries
-      const allSearchEntries = processAllFiles(
-        filesToProcess,
-        files,
-        normalizedOptions,
-        debug,
-        metalsmith
-      );
+      const allSearchEntries = processAllFiles(filesToProcess, files, normalizedOptions, debug, metalsmith);
 
       // Create and save the search index
       createAndSaveIndex(allSearchEntries, files, normalizedOptions, debug);
@@ -73,7 +66,7 @@ export default function search(options = {}) {
   // Set function name for debugging (helps with stack traces and debugging)
   Object.defineProperty(metalsmithPlugin, 'name', {
     value: 'searchPlugin',
-    configurable: true,
+    configurable: true
   });
 
   return metalsmithPlugin;

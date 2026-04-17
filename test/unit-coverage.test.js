@@ -1,11 +1,12 @@
 /**
  * Unit tests to cover remaining branches
  */
-import assert from 'assert';
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
 import { createSearchIndex } from '../src/processors/search-indexer.js';
 
-describe('Unit Tests for Coverage', function () {
-  it('should handle empty search entries array', function () {
+describe('Unit Tests for Coverage', () => {
+  it('should handle empty search entries array', () => {
     const result = createSearchIndex([], { fuseOptions: {} });
 
     assert(result, 'Should return an index');
@@ -13,7 +14,7 @@ describe('Unit Tests for Coverage', function () {
     assert.strictEqual(result.entries.length, 0, 'Entries array should be empty');
   });
 
-  it('should handle null/undefined search entries', function () {
+  it('should handle null/undefined search entries', () => {
     const result1 = createSearchIndex(null, { fuseOptions: {} });
     const result2 = createSearchIndex(undefined, { fuseOptions: {} });
 
@@ -23,17 +24,16 @@ describe('Unit Tests for Coverage', function () {
     assert.strictEqual(result2.totalEntries, 0);
   });
 
-  it('should clean text with null/undefined/non-string inputs', function () {
+  it('should clean text with null/undefined/non-string inputs', () => {
     const entries = [
       {
         title: null, // null title
-        content: undefined, // undefined content
-        description: 123, // non-string description
+        content: undefined // undefined content
       },
       {
         title: '', // empty string
-        content: '  ', // whitespace only
-      },
+        content: '  ' // whitespace only
+      }
     ];
 
     const result = createSearchIndex(entries, { fuseOptions: {} });
@@ -54,7 +54,7 @@ describe('Unit Tests for Coverage', function () {
     });
   });
 
-  it('should handle entries with all field types', function () {
+  it('should preserve all extractor-produced fields in optimized entries', () => {
     const entries = [
       {
         id: 'test-1',
@@ -62,13 +62,10 @@ describe('Unit Tests for Coverage', function () {
         url: '/test',
         title: 'Test Page',
         content: 'Test content',
-        description: 'Test description',
         excerpt: 'Test excerpt',
-        tags: ['tag1', 'tag2'],
-        date: '2025-01-01',
-        author: 'Test Author',
-        headings: [{ level: 'h2', id: 'heading-1', title: 'Heading 1' }],
-      },
+        wordCount: 42,
+        headings: [{ level: 'h2', id: 'heading-1', title: 'Heading 1' }]
+      }
     ];
 
     const result = createSearchIndex(entries, { fuseOptions: {} });
@@ -77,9 +74,13 @@ describe('Unit Tests for Coverage', function () {
     assert.strictEqual(result.entries.length, 1);
 
     const entry = result.entries[0];
-    assert(entry.tags, 'Should preserve tags');
-    assert(entry.date, 'Should preserve date');
-    assert(entry.author, 'Should preserve author');
+    assert.strictEqual(entry.id, 'test-1');
+    assert.strictEqual(entry.type, 'page');
+    assert.strictEqual(entry.url, '/test');
+    assert.strictEqual(entry.title, 'Test Page');
+    assert.strictEqual(entry.content, 'Test content');
+    assert.strictEqual(entry.excerpt, 'Test excerpt');
+    assert.strictEqual(entry.wordCount, 42);
     assert(entry.headings, 'Should preserve headings');
     assert.strictEqual(entry.headings.length, 1);
   });

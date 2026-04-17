@@ -14,7 +14,17 @@
  * @property {string[]} excludeSelectors - CSS selectors to exclude from content
  * @property {Object} fuseOptions - Fuse.js search configuration
  */
-export const defaultOptions = {
+function deepFreeze(obj) {
+  for (const key of Object.keys(obj)) {
+    const value = obj[key];
+    if (value && typeof value === 'object') {
+      deepFreeze(value);
+    }
+  }
+  return Object.freeze(obj);
+}
+
+export const defaultOptions = deepFreeze({
   pattern: '**/*.html',
   ignore: ['**/search-index.json'],
   indexPath: 'search-index.json',
@@ -25,14 +35,14 @@ export const defaultOptions = {
     keys: [
       { name: 'title', weight: 10 }, // Page title from <title> or <h1>
       { name: 'content', weight: 5 }, // All page text content
-      { name: 'excerpt', weight: 3 }, // Auto-generated excerpt
+      { name: 'excerpt', weight: 3 } // Auto-generated excerpt
     ],
     threshold: 0.3,
     includeScore: true,
     includeMatches: true,
-    minMatchCharLength: 3, // Skip stop words (to, be, or, etc.)
-  },
-};
+    minMatchCharLength: 3 // Skip stop words (to, be, or, etc.)
+  }
+});
 
 /**
  * Deep merge configuration objects without mutation
@@ -47,10 +57,7 @@ const deepMerge = (target, source) =>
       ...acc,
       // If source value is a plain object, recursively merge it
       // Otherwise, use the source value directly (overwrites target)
-      [key]:
-        source[key]?.constructor === Object
-          ? deepMerge(target[key] || {}, source[key])
-          : source[key],
+      [key]: source[key]?.constructor === Object ? deepMerge(target[key] || {}, source[key]) : source[key]
     }),
     { ...target } // Start with a copy of target to avoid mutation
   );
@@ -82,7 +89,7 @@ export function normalizeOptions(options) {
     ...options,
     pattern: normalizeToArray(options.pattern),
     ignore: normalizeToArray(options.ignore),
-    excludeSelectors: normalizeToArray(options.excludeSelectors),
+    excludeSelectors: normalizeToArray(options.excludeSelectors)
   };
 }
 

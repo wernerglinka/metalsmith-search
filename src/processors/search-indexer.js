@@ -7,7 +7,7 @@
  * Create a search index from extracted content entries
  * @param {Array} searchEntries - Array of search entries
  * @param {Object} options - Index creation options
- * @returns {Promise<Object>} Search index object
+ * @returns {Object} Search index object
  */
 export function createSearchIndex(searchEntries, options) {
   if (!Array.isArray(searchEntries) || searchEntries.length === 0) {
@@ -19,21 +19,21 @@ export function createSearchIndex(searchEntries, options) {
 
   // Create index structure
   const index = {
-    version: '1.0.0',
+    version: '2.0.0',
     generator: 'metalsmith-search',
     generated: new Date().toISOString(),
     totalEntries: optimizedEntries.length,
 
     // Index configuration for client-side reconstruction
     config: {
-      fuseOptions: options.fuseOptions,
+      fuseOptions: options.fuseOptions
     },
 
     // Statistics for debugging and optimization
     stats: generateIndexStats(optimizedEntries),
 
     // The actual searchable data
-    entries: optimizedEntries,
+    entries: optimizedEntries
   };
 
   return index;
@@ -58,20 +58,17 @@ function optimizeEntriesForSearch(entries) {
       // Searchable content fields
       title: cleanText(entry.title || ''),
       content: cleanText(entry.content || ''),
-
-      // Additional metadata for enhanced search
-      ...(entry.description && { description: cleanText(entry.description) }),
       ...(entry.excerpt && { excerpt: cleanText(entry.excerpt) }),
-      ...(entry.tags && { tags: entry.tags }),
-      ...(entry.date && { date: entry.date }),
-      ...(entry.author && { author: entry.author }),
 
       // Headings array for client-side scroll-to functionality
       // Format: [{level: 'h2', id: 'section-id', title: 'Section Title'}, ...]
       ...(entry.headings && entry.headings.length > 0 && { headings: entry.headings }),
 
+      // Word count from extractor
+      ...(entry.wordCount !== undefined && { wordCount: entry.wordCount }),
+
       // Search relevance (initially 0, will be set by Fuse.js)
-      score: 0,
+      score: 0
     };
 
     // Remove empty or undefined fields to reduce index size
@@ -89,7 +86,7 @@ function generateIndexStats(entries) {
     totalEntries: entries.length,
     entriesByType: {},
     averageContentLength: 0,
-    totalContentLength: 0,
+    totalContentLength: 0
   };
 
   let totalLength = 0;
@@ -116,25 +113,27 @@ function generateIndexStats(entries) {
  */
 function createEmptyIndex(options) {
   return {
-    version: '1.0.0',
+    version: '2.0.0',
     generator: 'metalsmith-search',
     generated: new Date().toISOString(),
     totalEntries: 0,
     config: {
-      fuseOptions: options.fuseOptions,
+      fuseOptions: options.fuseOptions
     },
     stats: {
       totalEntries: 0,
       entriesByType: {},
       averageContentLength: 0,
-      totalContentLength: 0,
+      totalContentLength: 0
     },
-    entries: [],
+    entries: []
   };
 }
 
 /**
- * Clean text content for search optimization
+ * Clean text content for search optimization.
+ * Normalizes whitespace and caps length; preserves all printable characters
+ * so technical content (e.g. C++, S&P, file paths, @handles) stays searchable.
  * @param {string} text - Raw text content
  * @returns {string} Cleaned text
  */
@@ -143,16 +142,7 @@ function cleanText(text) {
     return '';
   }
 
-  return (
-    text
-      .trim()
-      // Normalize whitespace
-      .replace(/\s+/g, ' ')
-      // Remove excessive punctuation
-      .replace(/[^\w\s\-.,!?;:'"()]/g, '')
-      // Limit length to prevent index bloat (adjust as needed)
-      .substring(0, 2000)
-  );
+  return text.trim().replace(/\s+/g, ' ').substring(0, 2000);
 }
 
 /**
