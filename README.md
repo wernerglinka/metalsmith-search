@@ -3,13 +3,13 @@
 [![metalsmith:plugin][metalsmith-badge]][metalsmith-url] [![npm: version][npm-badge]][npm-url]
 [![license: MIT][license-badge]][license-url] [![test coverage][coverage-badge]][coverage-url]
 
-An HTML-first Metalsmith search plugin with Fuse.js and Cheerio for accurate content indexing. For a
-live example of Metalsmith Search see the
+An HTML-first Metalsmith search plugin that uses Cheerio to extract content from final rendered
+HTML and emits a Fuse.js-compatible JSON index for client-side search. For a live example see the
 [Metalsmith Component Library](https://ms-components-library.netlify.app/references/sections/search/)
 website.
 
-> **Version 0.2.0** introduces breaking changes with HTML-first architecture. See migration guide
-> below.
+> **Version 1.0.0** is ESM-only and requires Node.js 22+. Fuse.js is no longer bundled — install it
+> separately on the client. See the migration guide below.
 
 ## Features
 
@@ -19,7 +19,7 @@ website.
 - Page-level indexing with automatic heading extraction
 - Automatic anchor ID generation for headings without IDs
 - Integrates frontmatter fields into search index
-- Powered by Fuse.js with configurable search keys
+- Emits a Fuse.js-compatible index with configurable search keys (Fuse runs client-side)
 - ESM-only (Node.js 22+)
 
 ## Installation
@@ -176,48 +176,34 @@ To enable debug logs, set the `DEBUG` environment variable to `metalsmith-search
 metalsmith.env('DEBUG', 'metalsmith-search*');
 ```
 
-## Migration from v0.1.x
+## Migration from v0.x to v1.0
 
-Version 0.2.0 introduces breaking changes with HTML-first architecture:
+Version 1.0.0 modernizes the toolchain and trims the public surface.
 
 ### Breaking Changes
 
-1. **Pattern default changed**: `**/*.md` → `**/*.html`
-2. **Pipeline position**: Before layouts → After layouts
-3. **Removed options**: `async`, `batchSize`, `lazyLoad`, `processMarkdownFields`, `sectionsField`,
-   `sectionTypeField`, `autoDetectSectionTypes`, `componentFields`, `maxSectionLength`, `chunkSize`,
-   `minSectionLength`, `frontmatterFields`
-4. **New options**: `excludeSelectors`
-5. **New dependency**: Cheerio added for HTML parsing
+1. **ESM only.** The CommonJS build is gone. Use `import search from 'metalsmith-search'` from an
+   ESM project.
+2. **Node.js 22+ required.** Earlier versions are unsupported.
+3. **Fuse.js is no longer a runtime dependency.** The plugin still produces a Fuse-compatible
+   index, but consumers must `npm install fuse.js` separately on the client.
+4. **`contentFields` option removed.** Frontmatter fields are no longer indexed; the plugin
+   processes only final rendered HTML. Move searchable content into your templates.
+5. **Search index schema bumped to `2.0.0`.** The entry shape no longer includes `description`,
+   `tags`, `date`, or `author` — only fields the HTML extractor produces (`id`, `type`, `url`,
+   `title`, `content`, `excerpt`, `headings`, `wordCount`). Update any client code that reads
+   those legacy fields.
 
-### Migration Steps
+### Migration from v0.1.x (HTML-first architecture)
 
-**Before (v0.1.x):**
+If you are still on v0.1.x, you also need the v0.2.0 changes:
 
-```js
-metalsmith
-  .use(
-    search({
-      pattern: '**/*.md',
-      indexLevels: ['page', 'section'],
-      sectionsField: 'sections',
-    })
-  )
-  .use(layouts());
-```
-
-**After (v0.2.0):**
-
-```js
-metalsmith
-  .use(layouts()) // Move layouts BEFORE search
-  .use(
-    search({
-      pattern: '**/*.html', // Change to HTML
-      excludeSelectors: ['nav', 'header', 'footer'], // Optional
-    })
-  );
-```
+- **Pattern default changed**: `**/*.md` → `**/*.html`
+- **Pipeline position**: place `search()` **after** `layouts()`
+- **Options removed**: `async`, `batchSize`, `lazyLoad`, `processMarkdownFields`, `sectionsField`,
+  `sectionTypeField`, `autoDetectSectionTypes`, `componentFields`, `maxSectionLength`,
+  `chunkSize`, `minSectionLength`, `frontmatterFields`
+- **Option added**: `excludeSelectors`
 
 ## Migration from metalsmith-lunr
 

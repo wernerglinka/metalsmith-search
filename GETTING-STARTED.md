@@ -1,7 +1,8 @@
 # Getting Started with metalsmith-search
 
 This guide covers everything you need to implement fast, accurate search functionality in your
-Metalsmith site using Fuse.js-powered fuzzy search with HTML-first indexing.
+Metalsmith site. The plugin extracts content from rendered HTML and emits a Fuse.js-compatible
+index that you wire up to Fuse on the client.
 
 ## Table of Contents
 
