@@ -16,15 +16,13 @@ describe('Edge Cases for Branch Coverage', () => {
   it('should handle empty heading titles', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/empty-headings.html'
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -48,15 +46,13 @@ describe('Edge Cases for Branch Coverage', () => {
   it('should generate unique IDs for duplicate heading titles', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/duplicate-headings.html'
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -89,15 +85,13 @@ describe('Edge Cases for Branch Coverage', () => {
   it('should use fallback title when no title or h1 exists', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/no-title.html'
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -119,15 +113,13 @@ describe('Edge Cases for Branch Coverage', () => {
   it('should skip files with only whitespace content', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/whitespace-only.html'
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -148,15 +140,13 @@ describe('Edge Cases for Branch Coverage', () => {
   it('should handle short content without truncation', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/sample.html' // Small file
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -183,15 +173,13 @@ describe('Edge Cases for Branch Coverage', () => {
   it('should truncate long content with ellipsis', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/traditional-long-article.html' // Large file
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -217,15 +205,13 @@ describe('Edge Cases for Branch Coverage', () => {
   it('should normalize index.html URLs correctly', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: 'index.html' // Exact match for root index.html only
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -247,8 +233,6 @@ describe('Edge Cases for Branch Coverage', () => {
   it('should handle empty excludeSelectors array', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/sample.html',
@@ -256,7 +240,7 @@ describe('Edge Cases for Branch Coverage', () => {
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -276,8 +260,6 @@ describe('Edge Cases for Branch Coverage', () => {
   it('should skip files whose contents is not a Buffer', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use((files, _metalsmith, next) => {
         files['injected-bad.html'] = { contents: 'not-a-buffer-string' };
         files['injected-null.html'] = { contents: null };
@@ -294,7 +276,7 @@ describe('Edge Cases for Branch Coverage', () => {
         next();
       });
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -317,8 +299,6 @@ describe('Edge Cases for Branch Coverage', () => {
   it('should skip files with all content excluded', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/page-with-chrome.html',
@@ -326,7 +306,7 @@ describe('Edge Cases for Branch Coverage', () => {
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }

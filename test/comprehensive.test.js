@@ -23,7 +23,7 @@ describe('metalsmith-search (Comprehensive)', () => {
             ignore: ['**/real-world.html']
           })
         )
-        .build((err, files) => {
+        .process((err, files) => {
           if (err) {
             return done(err);
           }
@@ -56,7 +56,7 @@ describe('metalsmith-search (Comprehensive)', () => {
             }
           })
         )
-        .build((err, files) => {
+        .process((err, files) => {
           if (err) {
             return done(err);
           }
@@ -80,7 +80,7 @@ describe('metalsmith-search (Comprehensive)', () => {
             anotherFakeOption: 'test'
           })
         )
-        .build((err, files) => {
+        .process((err, files) => {
           if (err) {
             return done(err);
           }
@@ -92,7 +92,7 @@ describe('metalsmith-search (Comprehensive)', () => {
 
   describe('index structure', () => {
     it('should create proper index metadata', (_t, done) => {
-      metalsmith.use(search({ pattern: '**/*.html' })).build((err, files) => {
+      metalsmith.use(search({ pattern: '**/*.html' })).process((err, files) => {
         if (err) {
           return done(err);
         }

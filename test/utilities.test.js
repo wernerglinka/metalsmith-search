@@ -4,91 +4,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Metalsmith from 'metalsmith';
 
-import { stripHtml } from '../src/utils/html-stripper.js';
 import { generateAnchorId } from '../src/utils/anchor-generator.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Utility Functions', () => {
-  describe('HTML Stripper', () => {
-    it('should strip basic HTML tags', () => {
-      const html = '<p>This is <strong>bold</strong> text</p>';
-      const result = stripHtml(html);
-      assert.strictEqual(result, 'This is bold text');
-    });
-
-    it('should handle nested HTML tags', () => {
-      const html = '<div><p>Nested <em><strong>content</strong></em></p></div>';
-      const result = stripHtml(html);
-      assert.strictEqual(result, 'Nested content');
-    });
-
-    it('should preserve text content only', () => {
-      const html = '<article><h1>Title</h1><p>Content with <a href="/">link</a></p></article>';
-      const result = stripHtml(html);
-      assert.ok(result.includes('Title'));
-      assert.ok(result.includes('Content with link'));
-      assert.ok(!result.includes('<'));
-      assert.ok(!result.includes('>'));
-    });
-
-    it('should handle HTML entities', () => {
-      const html = '<p>&lt;code&gt; &amp; &quot;quotes&quot;</p>';
-      const result = stripHtml(html);
-      assert.ok(result.includes('<code>'));
-      assert.ok(result.includes('&'));
-      assert.ok(result.includes('"quotes"'));
-    });
-
-    it('should handle malformed HTML gracefully', () => {
-      const html = '<p>Unclosed tag <div>Content';
-      const result = stripHtml(html);
-      assert.ok(typeof result === 'string');
-      assert.ok(result.length > 0);
-    });
-
-    it('should handle empty input', () => {
-      assert.strictEqual(stripHtml(''), '');
-      assert.strictEqual(stripHtml(null), '');
-      assert.strictEqual(stripHtml(undefined), '');
-    });
-
-    it('should handle text without HTML', () => {
-      const text = 'Plain text content';
-      const result = stripHtml(text);
-      assert.strictEqual(result, text);
-    });
-
-    it('should handle special characters and unicode', () => {
-      const html = '<p>Special: áéíóú 中文 🚀</p>';
-      const result = stripHtml(html);
-      assert.strictEqual(result, 'Special: áéíóú 中文 🚀');
-    });
-
-    it('should remove elements matching excludeSelectors', () => {
-      const html = `
-        <html><body>
-          <nav>Site nav</nav>
-          <header>Page header</header>
-          <main><p>Main article body</p></main>
-          <footer>Site footer</footer>
-        </body></html>
-      `;
-      const result = stripHtml(html, { excludeSelectors: ['nav', 'header', 'footer'] });
-      assert.ok(result.includes('Main article body'), 'Should keep main content');
-      assert.ok(!result.includes('Site nav'), 'Should remove nav');
-      assert.ok(!result.includes('Page header'), 'Should remove header');
-      assert.ok(!result.includes('Site footer'), 'Should remove footer');
-    });
-
-    it('should ignore empty excludeSelectors array', () => {
-      const html = '<nav>Keep me</nav><p>And me</p>';
-      const result = stripHtml(html, { excludeSelectors: [] });
-      assert.ok(result.includes('Keep me'));
-      assert.ok(result.includes('And me'));
-    });
-  });
-
   describe('Anchor Generator', () => {
     it('should generate basic anchor IDs', () => {
       const title = 'Simple Title';
@@ -124,6 +44,13 @@ describe('Utility Functions', () => {
       assert.ok(typeof generateAnchorId('') === 'string');
       assert.ok(typeof generateAnchorId(null) === 'string');
       assert.ok(typeof generateAnchorId(undefined) === 'string');
+    });
+
+    it('should truncate titles longer than 50 characters on a hyphen boundary', () => {
+      const longTitle = 'This is an extremely long heading that exceeds the fifty character cap';
+      const result = generateAnchorId(longTitle);
+      assert.ok(result.length <= 50, `expected ≤50 chars, got ${result.length}`);
+      assert.ok(!result.endsWith('-'), 'expected trailing hyphen to be trimmed');
     });
   });
 

@@ -100,10 +100,15 @@ export function extractSearchableContent(file, filename, options, metalsmith) {
 }
 
 /**
- * Extract all headings (h1-h6) and ensure they have IDs
+ * Collect h1-h6 headings into an array for the search index.
  *
- * For headings without IDs, generates URL-safe IDs from the heading text.
- * Returns metadata array for client-side scroll-to functionality.
+ * For headings that already carry an `id` attribute, that id is reused.
+ * For headings without an `id`, a URL-safe slug is generated from the
+ * heading text (with `-1`, `-2` suffixes to keep ids unique within a page).
+ *
+ * The rendered HTML is NOT modified — the generated ids live only inside
+ * the returned metadata, which is embedded in the search-index entry for
+ * client-side use (TOC, search result deep-links, scroll-to).
  *
  * @param {Object} $ - Cheerio instance
  * @param {Function} debug - Debug logging function
@@ -137,10 +142,7 @@ function extractAndProcessHeadings($, debug) {
         counter++;
       }
       id = uniqueId;
-
-      // Set the ID on the heading element
-      $heading.attr('id', id);
-      debug(`Generated ID '${id}' for ${level}: ${title}`);
+      debug(`Generated index-only ID '${id}' for ${level}: ${title}`);
     }
 
     usedIds.add(id);

@@ -26,7 +26,7 @@ describe('metalsmith-search', () => {
 
   describe('basic functionality', () => {
     it('should process files with minimal options', (_t, done) => {
-      metalsmith.use(search({})).build((err, files) => {
+      metalsmith.use(search({})).process((err, files) => {
         if (err) {
           return done(err);
         }
@@ -39,7 +39,7 @@ describe('metalsmith-search', () => {
     });
 
     it('should create search index file', (_t, done) => {
-      metalsmith.use(search({})).build((err, files) => {
+      metalsmith.use(search({})).process((err, files) => {
         if (err) {
           return done(err);
         }
@@ -65,7 +65,7 @@ describe('metalsmith-search', () => {
             indexPath: 'custom-search.json'
           })
         )
-        .build((err, files) => {
+        .process((err, files) => {
           if (err) {
             return done(err);
           }
@@ -82,7 +82,7 @@ describe('metalsmith-search', () => {
     it('should handle empty file set', (_t, done) => {
       const emptyMetalsmith = Metalsmith(path.join(__dirname, 'fixtures', 'empty'));
 
-      emptyMetalsmith.use(search({})).build((err, files) => {
+      emptyMetalsmith.use(search({})).process((err, files) => {
         if (err) {
           return done(err);
         }

@@ -65,10 +65,7 @@ function optimizeEntriesForSearch(entries) {
       ...(entry.headings && entry.headings.length > 0 && { headings: entry.headings }),
 
       // Word count from extractor
-      ...(entry.wordCount !== undefined && { wordCount: entry.wordCount }),
-
-      // Search relevance (initially 0, will be set by Fuse.js)
-      score: 0
+      ...(entry.wordCount !== undefined && { wordCount: entry.wordCount })
     };
 
     // Remove empty or undefined fields to reduce index size
@@ -132,8 +129,8 @@ function createEmptyIndex(options) {
 
 /**
  * Clean text content for search optimization.
- * Normalizes whitespace and caps length; preserves all printable characters
- * so technical content (e.g. C++, S&P, file paths, @handles) stays searchable.
+ * Normalizes whitespace; preserves all printable characters so technical
+ * content (e.g. C++, S&P, file paths, @handles) stays searchable.
  * @param {string} text - Raw text content
  * @returns {string} Cleaned text
  */
@@ -142,25 +139,23 @@ function cleanText(text) {
     return '';
   }
 
-  return text.trim().replace(/\s+/g, ' ').substring(0, 2000);
+  return text.trim().replace(/\s+/g, ' ');
 }
 
 /**
- * Remove empty or undefined fields from an object
+ * Drop null / undefined / empty-string fields from an entry. All other
+ * values (including 0, false, empty arrays, nested objects) are preserved
+ * as-is — callers gate inclusion of optional fields at the call site.
  * @param {Object} obj - Object to clean
  * @returns {Object} Cleaned object
  */
 function removeEmptyFields(obj) {
   const cleaned = {};
-
   for (const [key, value] of Object.entries(obj)) {
-    if (value !== null && value !== undefined && value !== '') {
-      // Keep arrays even if empty (they might be intentionally empty)
-      if (Array.isArray(value) || value) {
-        cleaned[key] = value;
-      }
+    if (value === null || value === undefined || value === '') {
+      continue;
     }
+    cleaned[key] = value;
   }
-
   return cleaned;
 }

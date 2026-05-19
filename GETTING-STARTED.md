@@ -26,37 +26,22 @@ index that you wire up to Fuse on the client.
 ```
 HTML Files (after layouts)
     ↓
-Load with Cheerio
+Load with Cheerio (read-only; HTML is not modified)
     ↓
-Remove excluded elements (nav, header, footer)
+Remove excluded elements (nav, header, footer, …)
     ↓
-Extract headings and generate IDs
+Collect headings into the index entry:
+  - existing id attribute → reused verbatim
+  - no id → slug generated for the index entry only
     ↓
-Extract text content
-    ↓
-Create search entries with:
-  - Page title
-  - Full content
-  - Excerpt (first 250 chars)
-  - Headings metadata
+Extract text content, excerpt, word count
     ↓
 Generate search-index.json
 ```
 
 ### Deep Linking with Headings
 
-The plugin automatically generates IDs for headings without them, enabling deep linking to specific
-sections:
-
-```html
-<!-- Input HTML -->
-<h2>Getting Started</h2>
-
-<!-- Modified by plugin -->
-<h2 id="getting-started">Getting Started</h2>
-```
-
-The search index includes heading metadata:
+Each index entry carries a `headings` array describing the page's structure:
 
 ```json
 {
@@ -69,10 +54,15 @@ The search index includes heading metadata:
 }
 ```
 
-Client-side code can use this to create deep links: `/docs/guide#getting-started`
+A client search component reads this to build deep-link URLs like
+`/docs/guide#getting-started`. For the browser to actually scroll to the target
+heading, **the rendered HTML must already have those `id` attributes** on the
+heading elements (typically via a markdown anchor plugin upstream of
+`metalsmith-search`), or the client must resolve anchors itself by matching the
+slug against the headings array.
 
-For complete details on the anchor generation system, see
-[THEORY-OPERATIONS.md](THEORY-OPERATIONS.md).
+For the full contract and rationale see
+[docs/THEORY.md](docs/THEORY.md).
 
 ## Installation
 
@@ -267,7 +257,7 @@ DEBUG=metalsmith-search* node build.js
 This shows detailed information about:
 
 - Files being processed
-- Headings extracted and IDs generated
+- Headings collected and any index-only ids slugified
 - Content extraction
 - Index generation
 - Performance metrics
@@ -276,7 +266,7 @@ Example output:
 
 ```
 metalsmith-search Processing /docs/guide.html (URL: /docs/guide, title: Developer Guide)
-metalsmith-search:extractor Generated ID 'getting-started' for h2: Getting Started
+metalsmith-search:extractor Generated index-only ID 'getting-started' for h2: Getting Started
 metalsmith-search:extractor Extracted page entry with 5 headings and 450 words
 ```
 
@@ -284,7 +274,7 @@ metalsmith-search:extractor Extracted page entry with 5 headings and 450 words
 
 ## Next Steps
 
-- Read [THEORY-OPERATIONS.md](THEORY-OPERATIONS.md) for deep dive into anchor generation
+- Read [docs/THEORY.md](docs/THEORY.md) for deep dive into anchor generation
 - Check [README.md](README.md) for complete API documentation
 - See [test/fixtures/](test/fixtures/) for example HTML structures
 - Explore Fuse.js documentation for advanced search features

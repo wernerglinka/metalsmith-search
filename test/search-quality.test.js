@@ -220,8 +220,6 @@ describe('Search Quality Tests', () => {
   it('should generate a high-quality search index from HTML content', (_t, done) => {
     const ms = Metalsmith(join(fixtures, 'basic'))
       .source('src')
-      .destination('build')
-      .clean(true)
       .use(
         search({
           pattern: '**/*.html',
@@ -230,7 +228,7 @@ describe('Search Quality Tests', () => {
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }

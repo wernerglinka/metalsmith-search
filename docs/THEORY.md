@@ -1,131 +1,107 @@
-# Theory of Operations: Anchor Generation & Deep Linking
+# Theory of Operations: Heading Metadata & Deep Linking
 
 ## Overview
 
-The `metalsmith-search` plugin implements an anchor generation system that enables **deep linking to
-specific sections within pages**. This document explains the theory, implementation, and client-side
-integration of this system. The plugin implements **heading-based deep linking** that allows search
-results to point directly to sections:
+The `metalsmith-search` plugin extracts content from final rendered HTML and emits a
+Fuse.js-compatible JSON index. As part of that index, every page entry carries a
+`headings` array describing the page's heading structure. This array is the
+foundation for deep-linking search results to specific sections:
 
 ```
 Search: "visual storytelling"
-Results in link: /docs/guide#visual-storytelling → Browser scrolls directly to section
+Result link: /docs/guide#visual-storytelling
 ```
 
-## Architecture: Two-Phase System
+This document explains how the heading metadata is built, what guarantees the plugin
+does and does not make about the rendered HTML, and how consumers wire up the deep
+links on the client side.
 
-The system operates in two phases during the Metalsmith build:
+## Architecture: Index-Only
 
-### Phase 1: HTML Modification (Build-Time)
-
-The plugin modifies HTML files to ensure all headings have unique IDs.
-
-### Phase 2: Index Generation (Build-Time)
-
-The plugin captures heading metadata in the search index for client-side use.
-
----
-
-## Phase 1: HTML Modification
-
-### Process Flow
+The plugin operates in a single pass during the Metalsmith build:
 
 ```
-HTML Input
+HTML Input (post-layouts)
     ↓
-Load with Cheerio
+Load with Cheerio (in-memory parse, never serialized back)
     ↓
-Find all headings (h1-h6)
+Optionally remove excludeSelectors (nav, header, footer, …)
     ↓
-For each heading:
-  - Has ID? → Keep it
-  - No ID? → Generate one
+Collect h1-h6 headings → headings: [{ level, id, title }, …]
     ↓
-Add ID to HTML element
+Extract page text, build excerpt and wordCount
     ↓
-Modified HTML Output
+Emit search-index.json
 ```
 
-### Implementation
+**The rendered HTML is not modified.** The Cheerio DOM is used to read content and
+walk headings; `file.contents` is never written back. If the input HTML already
+has `id` attributes on its headings, those ids are reused verbatim in the index.
+If a heading has no `id`, the plugin generates a slug (purely for the index entry)
+so consumers still have a stable anchor to target — see
+[Consumer Contract for Heading IDs](#consumer-contract-for-heading-ids) below.
+
+## Heading Collection
 
 **Location**: `src/processors/content-extractor.js:extractAndProcessHeadings()`
 
-**Code Flow**:
+For each `h1`–`h6` element:
 
-```javascript
-function extractAndProcessHeadings($, debug) {
-  const headings = [];
-  const usedIds = new Set(); // Prevent duplicates
+1. If the element has an `id` attribute, that id is recorded in the headings array.
+2. If it has no `id`, `generateAnchorId(title)` slugifies the text content. A
+   `-1`, `-2`, … suffix is appended if the slug is already in use on the same page.
+3. An entry `{ level, id, title }` is pushed onto the page's headings array.
 
-  $('h1, h2, h3, h4, h5, h6').each((index, el) => {
-    const $heading = $(el);
-    const title = $heading.text().trim();
+Empty / whitespace-only headings are skipped.
 
-    // Get existing ID or generate new one
-    let id = $heading.attr('id');
+### Example
 
-    if (!id) {
-      id = generateAnchorId(title);
-
-      // Ensure uniqueness
-      let uniqueId = id;
-      let counter = 1;
-      while (usedIds.has(uniqueId)) {
-        uniqueId = `${id}-${counter}`;
-        counter++;
-      }
-      id = uniqueId;
-
-      // CRITICAL: Modify the HTML
-      $heading.attr('id', id);
-    }
-
-    usedIds.add(id);
-    headings.push({ level, id, title });
-  });
-
-  return headings;
-}
-```
-
-### Example Transformation
-
-**Input HTML**:
+For this input HTML:
 
 ```html
-<!DOCTYPE html>
-<html>
-  <body>
-    <h1>Getting Started</h1>
-    <p>Introduction text...</p>
-
-    <h2>Installation</h2>
-    <p>Install instructions...</p>
-
-    <h2>Installation</h2>
-    <!-- Duplicate -->
-    <p>Alternative method...</p>
-  </body>
-</html>
+<h1>Getting Started</h1>
+<h2 id="install">Installation</h2>
+<h2>Installation</h2>     <!-- duplicate title -->
+<h2></h2>                  <!-- empty: skipped -->
 ```
 
-**Output HTML** (modified during build):
+…the search-index entry's `headings` array contains:
 
-```html
-<!DOCTYPE html>
-<html>
-  <body>
-    <h1 id="getting-started">Getting Started</h1>
-    <p>Introduction text...</p>
-
-    <h2 id="installation">Installation</h2>
-    <p>Install instructions...</p>
-
-    <h2 id="installation-1">Installation</h2>
-    <p>Alternative method...</p>
-  </body>
-</html>
+```json
+[
+  { "level": "h1", "id": "getting-started", "title": "Getting Started" },
+  { "level": "h2", "id": "install",         "title": "Installation"   },
+  { "level": "h2", "id": "installation",    "title": "Installation"   }
+]
 ```
+
+Note that the second `<h2>`'s existing `id="install"` is reused untouched, while the
+third gets a freshly-slugified `installation`. The rendered HTML is unchanged.
+
+## Consumer Contract for Heading IDs
+
+The `id` values in the search index are best understood as **stable slugs**, not as
+a guarantee that those ids exist as `id=` attributes on the rendered page. For a
+link like `/docs/guide#installation` to actually scroll the user to the right
+heading, one of two things must be true:
+
+1. **The rendered HTML already has those ids on its heading elements.** Achieve this
+   upstream of `metalsmith-search`: render markdown with a heading-anchor plugin
+   (e.g. `markdown-it-anchor` configured with the same slug rules), or have layouts
+   emit `id` attributes directly. The plugin will read those ids verbatim and the
+   browser will resolve the `#anchor` natively.
+
+2. **The client resolves anchors itself.** A search component can read the index's
+   `headings` array, match an incoming `#slug` against `headings[].id`, and
+   scroll / highlight the corresponding heading element by text rather than by DOM
+   id. The reference implementation at
+   [metalsmith-components/search](https://github.com/wernerglinka/metalsmith-components/tree/main/lib/layouts/components/_partials/search)
+   does this — it works against any HTML, regardless of whether the original
+   headings carried `id` attributes.
+
+Either path is supported. Most sites pick whichever fits their existing
+markdown / templating pipeline; component-based sites tend toward option 2 because
+the search component already owns the scroll/highlight behaviour.
 
 ---
 
@@ -189,7 +165,7 @@ Output: "getting-started-chapter-3"
 
 ---
 
-## Phase 2: Search Index Generation
+## Search Index Generation
 
 ### Data Structure
 

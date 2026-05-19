@@ -17,8 +17,7 @@ website.
 - Uses Cheerio for HTML parsing
 - Configurable content exclusion via CSS selectors
 - Page-level indexing with automatic heading extraction
-- Automatic anchor ID generation for headings without IDs
-- Integrates frontmatter fields into search index
+- Slugified anchor ids generated in the index for headings without an `id` attribute
 - Emits a Fuse.js-compatible index with configurable search keys (Fuse runs client-side)
 - ESM-only (Node.js 22+)
 
@@ -85,15 +84,17 @@ metalsmith.use(
 
 The plugin processes HTML files **after** layouts/templates for accurate search indexing:
 
-1. **HTML Parsing**: Uses Cheerio to parse final rendered HTML
-2. **Content Exclusion**: Optionally removes nav, header, footer elements
-3. **Content Extraction**: Extracts all text content from the page
-4. **Heading Processing**: Finds all headings (h1-h6) and ensures they have IDs
-5. **Index Generation**: Creates Fuse.js-compatible search index with:
-   - Full page text content
-   - Metadata from frontmatter
-   - Headings array for scroll-to functionality
-6. **Anchor Generation**: Automatically generates IDs for headings without them
+1. **HTML Parsing**: Uses Cheerio to parse the final rendered HTML.
+2. **Content Exclusion**: Optionally removes elements matching `excludeSelectors`
+   (defaults to `nav`, `header`, `footer`).
+3. **Content Extraction**: Pulls all remaining text content for the index entry.
+4. **Heading Collection**: Walks every `h1`–`h6` and records `{level, id, title}`
+   in the entry's `headings` array. If a heading carries an `id` attribute that id
+   is reused; otherwise a slugified id is generated for the index entry. The
+   rendered HTML is not modified — see [Heading IDs](#heading-ids).
+5. **Index Generation**: Emits a Fuse.js-compatible `search-index.json` containing
+   the page text, excerpt, word count, headings metadata, and the Fuse config the
+   client should use to query it.
 
 ## Options
 
@@ -151,22 +152,38 @@ Each page generates a single search entry with this structure:
 }
 ```
 
-**The `headings` array enables scroll-to functionality:**
+### Heading IDs
 
-- Fuse.js finds all matches within the page content
-- Client-side JavaScript uses `headings` to determine which section each match is in
-- Users can be scrolled to the nearest heading anchor
+The plugin does **not** modify your HTML files. It reads the rendered HTML and emits
+the `headings` array on each index entry:
 
-**Automatic ID generation:**
+- Headings with an `id` attribute: the existing `id` is recorded verbatim.
+- Headings without an `id`: a URL-safe slug is generated from the heading text and
+  recorded in the index entry only. `-1`, `-2` suffixes are appended to keep ids
+  unique within a page.
 
-- Headings with existing IDs: preserved as-is
-- Headings without IDs: automatically generated from heading text
-- Duplicate prevention: adds `-2`, `-3` suffixes for uniqueness
+For a deep link like `/page#some-id` to actually scroll the browser to that heading,
+the rendered HTML must have an element with that `id`. Two ways to make that work:
+
+1. **Render with auto-anchored headings.** Run a markdown plugin (e.g.
+   `markdown-it-anchor`) or layout helper that adds `id` attributes during build,
+   before this plugin sees the HTML. The plugin will reuse those ids verbatim.
+2. **Resolve client-side.** Read the index's `headings` array in your search
+   component and scroll / highlight by matching the slug against heading text,
+   without relying on DOM `id` attributes. The
+   [reference search component](https://github.com/wernerglinka/metalsmith-components/tree/main/lib/layouts/components/_partials/search)
+   takes this approach.
 
 ## Examples
 
 For comprehensive examples including client-side implementation, component-based sites, traditional
-sites, and advanced features, see **[GETTING-STARTED.md](./GETTING-STARTED.md)**.
+sites, and features, see **[GETTING-STARTED.md](./GETTING-STARTED.md)**.
+
+## Test Coverage
+
+Run the test suite with coverage via `npm run coverage`. The plugin uses Node's
+native test runner and built-in coverage reporter; the coverage badge above is
+updated by CI on each merge to `main`.
 
 ## Debug
 
@@ -262,4 +279,4 @@ MIT © [Werner Glinka](https://github.com/wernerglinka)
 [license-badge]: https://img.shields.io/github/license/wernerglinka/metalsmith-search
 [license-url]: LICENSE
 [coverage-badge]: https://img.shields.io/badge/test%20coverage-97%25-brightgreen
-[coverage-url]: #testing-and-coverage
+[coverage-url]: #test-coverage

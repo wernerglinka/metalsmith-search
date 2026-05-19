@@ -16,8 +16,6 @@ describe('Real-World HTML Processing', () => {
   it('should extract content and headings from real-world blog post HTML', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/real-world.html',
@@ -25,7 +23,7 @@ describe('Real-World HTML Processing', () => {
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -75,8 +73,6 @@ describe('Real-World HTML Processing', () => {
   it('should include navigation when excludeSelectors is empty', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/real-world.html',
@@ -84,7 +80,7 @@ describe('Real-World HTML Processing', () => {
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -105,8 +101,6 @@ describe('Real-World HTML Processing', () => {
   it('should extract all heading levels (h1-h6)', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/real-world.html',
@@ -114,7 +108,7 @@ describe('Real-World HTML Processing', () => {
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -145,8 +139,6 @@ describe('Real-World HTML Processing', () => {
   it('should handle duplicate heading titles by generating unique IDs', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/traditional-long-article.html',
@@ -154,7 +146,7 @@ describe('Real-World HTML Processing', () => {
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       if (err) {
         return done(err);
       }
@@ -180,8 +172,6 @@ describe('Real-World HTML Processing', () => {
   it('should handle malformed HTML gracefully', (_t, done) => {
     const ms = Metalsmith(fixtures)
       .source('src')
-      .destination('build')
-      .clean(false)
       .use(
         search({
           pattern: '**/component-page.html',
@@ -189,7 +179,7 @@ describe('Real-World HTML Processing', () => {
         })
       );
 
-    ms.build((err, files) => {
+    ms.process((err, files) => {
       // Should not error even with unusual HTML
       if (err) {
         return done(err);
