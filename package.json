@@ -1,6 +1,6 @@
 {
   "name": "metalsmith-search",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "HTML-first Metalsmith search plugin that emits a Fuse.js-compatible index using Cheerio",
   "keywords": [
     "metalsmith",
