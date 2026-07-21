@@ -2,6 +2,7 @@
 
 [![metalsmith:plugin][metalsmith-badge]][metalsmith-url] [![npm: version][npm-badge]][npm-url]
 [![license: MIT][license-badge]][license-url] [![test coverage][coverage-badge]][coverage-url]
+[![ESM][modules-badge]][npm-url]
 
 An HTML-first Metalsmith search plugin that uses Cheerio to extract content from final rendered
 HTML and emits a Fuse.js-compatible JSON index for client-side search. For a live example see the
@@ -280,3 +281,4 @@ MIT © [Werner Glinka](https://github.com/wernerglinka)
 [license-url]: LICENSE
 [coverage-badge]: https://img.shields.io/badge/test%20coverage-93%25-brightgreen
 [coverage-url]: #test-coverage
+[modules-badge]: https://img.shields.io/badge/module-ESM-blue
